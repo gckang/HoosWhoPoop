@@ -1,5 +1,7 @@
 # HoosWhoPoop
 
-Create user "demo" with password "demo". The database name currently is "potd5" but we can change that later.
+Create user "demo" with password "demo". The database name is "poo".
 
 Make sure to have this folder saved under xampp\htdocs folder.
+
+The files request.php and request-db.php are from POTD5 used only for reference.

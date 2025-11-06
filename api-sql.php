@@ -1,0 +1,57 @@
+<?php
+// This file contains all the database functions (SQL queries)
+// related to habits. It is included by api.php.
+
+/**
+ * Get all habits for a specific user.
+ * @param PDO $db The database connection object
+ * @param int $user_id The ID of the user
+ * @return array An array of habits
+ */
+function getAllHabitsForUser($db, $user_id)
+{
+    $query = "SELECT user_id, habit_id, category FROM habit WHERE user_id = :user_id ORDER BY habit_id DESC";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+    $stmt->execute();
+    $habits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return $habits;
+}
+
+/**
+ * Add a new habit for a specific user.
+ * @param PDO $db The database connection object
+ * @param int $user_id The ID of the user
+ * @param string $category The text/category of the new habit
+ * @return array An array containing the newly created habit's info
+ */
+function addHabitForUser($db, $user_id, $category)
+{
+    // --- Find the next available habit_id for this user ---
+    // (This logic is required by your schema's composite primary key)
+    $query_max = "SELECT IFNULL(MAX(habit_id), 0) + 1 AS next_id FROM habit WHERE user_id = :user_id";
+    $stmt_max = $db->prepare($query_max);
+    $stmt_max->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+    $stmt_max->execute();
+    $row = $stmt_max->fetch(PDO::FETCH_ASSOC);
+    $next_habit_id = $row['next_id'];
+
+    // --- Insert the new habit ---
+    $query_insert = "INSERT INTO habit (user_id, habit_id, category) VALUES (:user_id, :habit_id, :category)";
+    $stmt_insert = $db->prepare($query_insert);
+    
+    $stmt_insert->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+    $stmt_insert->bindValue(':habit_id', $next_habit_id, PDO::PARAM_INT);
+    $stmt_insert->bindValue(':category', $category, PDO::PARAM_STR);
+    
+    $stmt_insert->execute();
+
+    // Return the data for the new habit
+    return [
+        'user_id' => $user_id,
+        'habit_id' => $next_habit_id,
+        'category' => $category
+    ];
+}
+
+?>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">    
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="author" content="Upsorn Praphamontripong">
+  <meta name="author" content="Grace Kang, Blaire Zhao, Michelle Lin">
   <meta name="description" content="Maintenance request form, a small/toy web app for ISP homework assignment, used by CS 3250 (Software Testing)">
   <meta name="keywords" content="CS 3250, Upsorn, Praphamontripong, Software Testing">
   <link rel="icon" href="https://www.cs.virginia.edu/~up3f/cs3250/images/st-icon.png" type="image/png" />  

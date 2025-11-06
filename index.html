@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Habit Tracker (React + PHP)</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Load React libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- 3. Load Babel to transpile JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        [data-reactroot] {
+            display: block;
+            opacity: 1;
+            transition: opacity 0.5s ease-in;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans antialiased">
+    <div id="root">
+        <p class="text-center text-lg p-10">Loading React App...</p>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Main App Component
+        function App() {
+            // Updated state names for "habits"
+            const [habits, setHabits] = useState([]);
+            const [newHabit, setNewHabit] = useState("");
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            const API_URL = './api.php';
+
+            // Function to fetch all habits
+            const fetchHabits = () => {
+                setLoading(true);
+                setError(null);
+                fetch(API_URL)
+                    .then(response => {
+                        if (!response.ok) {
+                            // Try to read the error message from the backend
+                            return response.json().then(errData => {
+                                throw new Error(errData.message || `HTTP error! status: ${response.status}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        setHabits(data);
+                    })
+                    .catch(err => {
+                        console.error("Fetch error:", err);
+                        // Display the error from the backend
+                        setError(err.message || "Could not fetch habits. Is the backend running?");
+                    })
+                    .finally(() => {
+                        setLoading(false);
+                    });
+            };
+
+            // Function to handle form submission
+            const handleHabitSubmit = (e) => {
+                e.preventDefault();
+                if (newHabit.trim() === "") return;
+
+                fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    // Send 'category' instead of 'goal_text'
+                    body: JSON.stringify({ category: newHabit.trim() })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        setNewHabit("");
+                        fetchHabits(); // Re-fetch to show the new habit
+                    } else {
+                        throw new Error(data.message || "Failed to add habit.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Submit error:", err);
+                    setError(err.message || "Could not add habit.");
+                });
+            };
+
+            // Fetch habits on initial load
+            useEffect(() => {
+                fetchHabits();
+            }, []);
+
+            return (
+                <div className="container mx-auto max-w-2xl p-4 mt-10">
+                    <div className="bg-white p-8 rounded-lg shadow-lg">
+                        <h1 className="text-3xl font-bold text-center text-slate-800 mb-2">
+                            My Habits
+                        </h1>
+                        <p className="text-center text-sm text-indigo-600 font-semibold mb-6">
+                            (Showing habits for User ID: 1)
+                        </p>
+
+                        {/* Error Message Display */}
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mb-4" role="alert">
+                                <strong className="font-bold">Error: </strong>
+                                <span className="block sm:inline">{error}</span>
+                            </div>
+                        )}
+
+                        {/* New Habit Form */}
+                        <form onSubmit={handleHabitSubmit} className="flex gap-3 mb-6">
+                            <input
+                                type="text"
+                                value={newHabit}
+                                onChange={(e) => setNewHabit(e.target.value)}
+                                placeholder="What's a new habit to track?"
+                                className="flex-grow p-3 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                            <button
+                                type="submit"
+                                className="bg-indigo-600 text-white px-6 py-3 rounded-md font-semibold shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            >
+                                Add
+                            </button>
+                        </form>
+
+                        {/* Habits List */}
+                        <div className="space-y-4">
+                            {loading && <p className="text-center text-slate-500">Loading habits...</p>}
+                            
+                            {!loading && habits.length === 0 && (
+                                <p className="text-center text-slate-500">No habits added yet for User 1.</p>
+                            )}
+
+                            <ul className="divide-y divide-slate-200">
+                                {habits.map(habit => (
+                                    <li key={habit.habit_id} className="p-4 flex justify-between items-center transition duration-150 ease-in-out hover:bg-slate-50">
+                                        <span className="text-slate-700">
+                                            {habit.category}
+                                        </span>
+                                        <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
+                                            Habit ID: {habit.habit_id}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Mount the App ---
+        const domContainer = document.querySelector('#root');
+        const root = ReactDOM.createRoot(domContainer);
+        root.render(<App />);
+
+    </script>
+</body>
+</html>

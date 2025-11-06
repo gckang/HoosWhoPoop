@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 // --- Database Connection ---
 require('connect-db.php');    // include
-require('api-sql.php');
+require('habit-sql.php');
 
 // --- Hardcoded User ID ---
 // Your schema is designed for multiple users. Since we don't have a

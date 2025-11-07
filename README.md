@@ -6,4 +6,4 @@ Make sure to have this folder saved under xampp\htdocs folder.
 
 Access the page from http://localhost/hooswhopoop/login.html
 
-All the passwords stored in the database are encrypted, but the pattern is pass<USERNAME>!
+All the passwords stored in the database are encrypted, but the pattern is passUSERNAME!

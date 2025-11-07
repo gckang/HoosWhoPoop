@@ -1,4 +1,10 @@
 <?php
+session_start();
+ob_start();
+
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 // --- CORS and HTTP Headers ---
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -7,55 +13,85 @@ header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     http_response_code(200);
+    ob_end_flush(); // send buffered headers
     exit();
 }
 
-// --- Database Connection ---
-require('connect-db.php');    // include
-require('habit-sql.php');
+try {
+    // --- CHECK AUTHENTICATION ---
+    if (!isset($_SESSION['user_id'])) {
+        throw new Exception('User not logged in. Please log in to access data.', 401);
+    }
 
-// --- Hardcoded User ID ---
-// Your schema is designed for multiple users. Since we don't have a
-// login system, we will hardcode all operations for user_id = 1.
-$current_user_id = 1;
+    // --- Database Connection ---
+    require('connect-db.php');    // include
+    require('habit-sql.php');
 
-// Get the HTTP request method
-$method = $_SERVER['REQUEST_METHOD'];
+    // --- Hardcoded User ID ---
+    // Your schema is designed for multiple users. Since we don't have a
+    // login system, we will hardcode all operations for user_id = 1.
+    $current_user_id = $_SESSION['user_id'];;
 
-// Handle the request based on the method
-switch ($method) {
-    case 'GET':
-        $habits = getAllHabitsForUser($db, $current_user_id);
-        echo json_encode($habits);
-        break;
+    // Get the HTTP request method
+    $method = $_SERVER['REQUEST_METHOD'];
 
-    case 'POST':
-        // Handle POST request (Add a new habit for user 1)
-        $data = json_decode(file_get_contents('php://input'));
+    // Handle the request based on the method
+    switch ($method) {
+        case 'GET':
+            $habits = getAllHabitsForUser($db, $current_user_id);
+            echo json_encode($habits);
+            break;
 
-        // Basic validation: Check for 'category' (was 'goal_text' before)
-        if (empty($data) || !isset($data->category) || trim($data->category) === '') {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Habit category is required.']);
-            exit();
-        }
+        case 'POST':
+            // Handle POST request (Add a new habit for user 1)
+            $data = json_decode(file_get_contents('php://input'));
 
-        $category = trim($data->category);
+            // Basic validation: Check for 'category' (was 'goal_text' before)
+            if (empty($data) || !isset($data->category) || trim($data->category) === '') {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Habit category is required.']);
+                exit();
+            }
 
-        $new_habit = addHabitForUser($db, $current_user_id, $category);
-        
-        http_response_code(201); // Created
-        echo json_encode([
-            'status' => 'success',
-            'message' => 'Habit added successfully.',
-            'habit' => $new_habit // Send back the new habit data
-        ]);
-        break;
+            $category = trim($data->category);
+
+            $new_habit = addHabitForUser($db, $current_user_id, $category);
+            
+            http_response_code(201); // Created
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Habit added successfully.',
+                'habit' => $new_habit // Send back the new habit data
+            ]);
+            break;
 
 
-    default:
-        http_response_code(405); // Method Not Allowed
-        echo json_encode(['status' => 'error', 'message' => 'Method not allowed.']);
-        break;
+        default:
+            http_response_code(405); // Method Not Allowed
+            echo json_encode(['status' => 'error', 'message' => 'Method not allowed.']);
+            break;
+    }
+} catch (Throwable $e) {
+    // --- GLOBAL ERROR HANDLER ---
+    ob_clean(); // Clear the output buffer (deletes any HTML warnings)
+    
+    // Set HTTP status code (use 500 if code not specified)
+    $code = $e->getCode();
+    if ($code < 100 || $code > 599) {
+        $code = 500;
+    }
+    http_response_code($code);
+
+    // Send a *JSON* error
+    echo json_encode([
+        'status' => 'error',
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
+
+} finally {
+    // --- 8. SEND RESPONSE ---
+    ob_end_flush(); // Send the final, clean output
 }
 ?>

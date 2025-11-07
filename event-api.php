@@ -1,8 +1,10 @@
 <?php
+session_start();
+ob_start();
+
 // --- Error & Output Buffering ---
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ob_start();
 
 // --- CORS and HTTP Headers ---
 header("Access-Control-Allow-Origin: *");
@@ -18,10 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 // --- Global Try/Catch Block ---
 try {
+    // --- CHECK AUTHENTICATION ---
+    if (!isset($_SESSION['user_id'])) {
+        throw new Exception('User not logged in. Please log in to access data.', 401);
+    }
+
     require('connect-db.php');    // include
     require('event-sql.php');   
 
-    $current_user_id = 1; // Hardcoded user ID
+    $current_user_id = $_SESSION['user_id'];
     $method = $_SERVER['REQUEST_METHOD'];
 
     switch ($method) {
@@ -56,10 +63,14 @@ try {
     }
 
 } catch (Throwable $e) {
-    http_response_code(500);
+    // --- GLOBAL ERROR HANDLER ---
+    ob_clean();
+    $code = $e->getCode();
+    if ($code < 100 || $code > 599) { $code = 500; }
+    http_response_code($code);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Server Error: ' . $e->getMessage(),
+        'message' => $e->getMessage(),
         'file' => $e->getFile(),
         'line' => $e->getLine()
     ]);

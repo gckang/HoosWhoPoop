@@ -34,9 +34,13 @@
         // --- API URLs ---
         // Change 'habit-tracker' to your folder name
         const API_BASE_URL = 'http://localhost/HoosWhoPoop';
+
         const HABIT_API_URL = `${API_BASE_URL}/habit-api.php`;
         const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
         const EVENT_API_URL = `${API_BASE_URL}/event-api.php`;
+
+        const CHECK_SESSION_API_URL = `${API_BASE_URL}/check-session-api.php`;
+        const LOGOUT_API_URL = `${API_BASE_URL}/logout-api.php`;
 
         // --- Helper Components ---
         const LoadingSpinner = () => (
@@ -57,12 +61,41 @@
 
         // --- Main App Component ---
         function App() {
+            const [user, setUser] = useState(null); // Store user data
+            const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Auth check state
+
             const [habits, setHabits] = useState([]);
             const [goals, setGoals] = useState([]);
             const [events, setEvents] = useState([]);
             
             const [loading, setLoading] = useState({ habits: true, goals: true, events: true });
             const [error, setError] = useState(null);
+
+            // --- CHECK AUTHENTICATION ---
+            useEffect(() => {
+                const checkAuth = async () => {
+                    try {
+                        // We must send credentials (like the session cookie)
+                        const response = await fetch(CHECK_SESSION_API_URL, { credentials: 'include' });
+                        if (!response.ok) {
+                            // Not logged in, or other error
+                            throw new Error('Not logged in');
+                        }
+                        const data = await response.json();
+                        if (data.status === 'success') {
+                            setUser(data.user); // Store user data
+                        } else {
+                            throw new Error('Not logged in');
+                        }
+                    } catch (e) {
+                        // Redirect to login page
+                        window.location.href = 'login.html';
+                    } finally {
+                        setIsCheckingAuth(false);
+                    }
+                };
+                checkAuth();
+            }, []);
 
             // --- Data Fetching ---
             const fetchData = useCallback(async (url, key, setter) => {
@@ -87,10 +120,12 @@
 
             // Initial data load
             useEffect(() => {
-                fetchData(HABIT_API_URL, 'habits', setHabits);
-                fetchData(GOAL_API_URL, 'goals', setGoals);
-                fetchData(EVENT_API_URL, 'events', setEvents);
-            }, [fetchData]);
+                if (user) { // Only fetch data *after* auth check is successful
+                    fetchData(HABIT_API_URL, 'habits', setHabits);
+                    fetchData(GOAL_API_URL, 'goals', setGoals);
+                    fetchData(EVENT_API_URL, 'events', setEvents);
+                }
+            }, [user, fetchData]);
 
             // --- Event Handlers ---
             const handleHabitAdded = (newHabit) => {
@@ -107,13 +142,43 @@
                 fetchData(EVENT_API_URL, 'events', setEvents);
             };
 
+            const handleLogout = async () => {
+                try {
+                    await fetch(LOGOUT_API_URL, { method: 'POST', credentials: 'include' });
+                } catch (e) {
+                    console.error("Error logging out:", e);
+                } finally {
+                    window.location.href = 'login.html';
+                }
+            };
+
+            // --- RENDER ---
+            
+            // Show a "loading auth" screen
+            if (isCheckingAuth) {
+                return (
+                    <div className="flex items-center justify-center min-h-screen">
+                        <LoadingSpinner />
+                    </div>
+                );
+            }
+
             return (
                 <div className="container mx-auto p-4 max-w-4xl">
                     <header className="text-center mb-8">
                         <h1 className="text-4xl font-bold text-blue-600">HoosWhoPoop</h1>
-                        <p className="text-lg text-gray-700 mt-2">
-                            All data is for a <span className="font-mono bg-blue-100 px-2 py-1 rounded">user_id = 1</span>
-                        </p>
+                        <div className="flex justify-between items-center mt-2">
+                                <span /> {/* Spacer */}
+                            <p className="text-lg text-gray-700 mt-2">
+                                Hello pooper, <span className="font-mono bg-blue-100 px-2 py-1 rounded">{user.username}</span>
+                            </p>
+                            <button
+                                onClick={handleLogout}
+                                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition text-sm"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     </header>
 
                     {error && <ErrorMessage message={error} onClear={() => setError(null)} />}

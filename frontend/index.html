@@ -32,15 +32,14 @@
         const { useState, useEffect, useCallback } = React;
 
         // --- API URLs ---
-        // Change 'habit-tracker' to your folder name
-        const API_BASE_URL = 'http://localhost/HoosWhoPoop';
+        const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
 
         const HABIT_API_URL = `${API_BASE_URL}/habit-api.php`;
         const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
         const EVENT_API_URL = `${API_BASE_URL}/event-api.php`;
 
-        const CHECK_SESSION_API_URL = `${API_BASE_URL}/check-session-api.php`;
-        const LOGOUT_API_URL = `${API_BASE_URL}/logout-api.php`;
+        const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
+        const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
 
         // --- Helper Components ---
         const LoadingSpinner = () => (

@@ -27,9 +27,7 @@ try {
     require('connect-db.php');    // include
     require('habit-sql.php');
 
-    // --- Hardcoded User ID ---
-    // Your schema is designed for multiple users. Since we don't have a
-    // login system, we will hardcode all operations for user_id = 1.
+    // --- User ID ---
     $current_user_id = $_SESSION['user_id'];;
 
     // Get the HTTP request method

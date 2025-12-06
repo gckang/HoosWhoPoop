@@ -20,6 +20,7 @@ SET time_zone = "+00:00";
 --
 -- Database: 'poo'
 --
+USE poo;
 
 DELIMITER $$
 --
@@ -349,32 +350,32 @@ CREATE TABLE `time_completed` (
 
 --
 -- Table structure for table `useraccount`
---
+-- already exists in new sql file 
 
-CREATE TABLE `useraccount` (
-  `user_id` int(11) NOT NULL,
-  `username` varchar(50) NOT NULL,
-  `password` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- CREATE TABLE `useraccount` (
+--   `user_id` int(11) NOT NULL,
+--   `username` varchar(50) NOT NULL,
+--   `password` varchar(100) NOT NULL
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `useraccount`
---
+-- --
+-- -- Dumping data for table `useraccount`
+-- --
 
-INSERT INTO `useraccount` (`user_id`, `username`, `password`) VALUES
-(1, 'Seungcheol', 'passSeungcheol!'),
-(2, 'Jeonghan', 'passJeonghan!'),
-(3, 'Joshua', 'passJoshua!'),
-(4, 'Jun', 'passJun!'),
-(5, 'Hoshi', 'passHoshi!'),
-(6, 'Wonwoo', 'passWonwoo!'),
-(7, 'Woozi', 'passWoozi!'),
-(8, 'Minghao', 'passMinghao!'),
-(9, 'Mingyu', 'passMingyu!'),
-(10, 'DK', 'passDK!'),
-(11, 'Seungkwan', 'passSeungkwan!'),
-(12, 'Vernon', 'passVernon!'),
-(13, 'Dino', 'passDino!');
+-- INSERT INTO `useraccount` (`user_id`, `username`, `password`) VALUES
+-- (1, 'Seungcheol', 'passSeungcheol!'),
+-- (2, 'Jeonghan', 'passJeonghan!'),
+-- (3, 'Joshua', 'passJoshua!'),
+-- (4, 'Jun', 'passJun!'),
+-- (5, 'Hoshi', 'passHoshi!'),
+-- (6, 'Wonwoo', 'passWonwoo!'),
+-- (7, 'Woozi', 'passWoozi!'),
+-- (8, 'Minghao', 'passMinghao!'),
+-- (9, 'Mingyu', 'passMingyu!'),
+-- (10, 'DK', 'passDK!'),
+-- (11, 'Seungkwan', 'passSeungkwan!'),
+-- (12, 'Vernon', 'passVernon!'),
+-- (13, 'Dino', 'passDino!');
 
 -- --------------------------------------------------------
 

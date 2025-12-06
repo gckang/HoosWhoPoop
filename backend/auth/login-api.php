@@ -23,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 // --- Global Try/Catch Block ---
 try {
-    require('../connect-db.php');  // Provides $db
-    require('login-sql.php');     // Provides auth functions
+    require(__DIR__ .'/../connect-db.php');  // Provides $db
+    require(__DIR__ .'/login-sql.php');     // Provides auth functions
 
     $method = $_SERVER['REQUEST_METHOD'];
 

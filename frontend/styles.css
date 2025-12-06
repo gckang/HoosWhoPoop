@@ -1,0 +1,128 @@
+:root {
+    --blue: #87A9CC;
+}
+body {
+    margin: 0;
+    padding: 0;
+}
+/* Spinner */
+.spinner {
+    border: 4px solid rgba(0,0,0,.1);
+    border-left-color:#3b82f6;
+    border-radius:50%;
+    width:24px;
+    height:24px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Error messages */
+.error-message {
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+    padding: 8px 12px;
+    border-radius: 6px;
+    position: relative;
+    margin-bottom: 8px;
+}
+.error-message .close {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    cursor: pointer;
+}
+
+/* App layout */
+.content-container {
+    /*max-width: 100%;*/
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto;
+    padding: 16px;
+    font-family: sans-serif;
+}
+.app-header {
+    display: flex;                /* make header a flex container */
+    align-items: center;          /* vertically center items */
+    justify-content: space-between; /* space out items across the bar */
+    background-color: #333333;    /* make the bar colored */
+    padding: 10px 20px;
+    color: white;
+    top: 0;
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.app-header .username {
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+.app-header .navigation {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;               /* horizontal menu items */
+}
+
+.app-header .navigation li a {
+    display: block;
+    color: white;
+    padding: 10px 16px;
+    text-decoration: none;
+}
+
+.app-header .navigation li a:hover {
+    background-color: #111111;
+}
+
+.app-header .logout-button {
+    margin-left: 20px;
+    padding: 8px 12px;
+    background-color: #555555;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.app-header .logout-button:hover {
+    background-color: #111111;
+}
+
+.username { font-family: monospace; background-color: #bfdbfe; padding: 2px 6px; border-radius: 4px; }
+.logout-button { background-color: #ef4444; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; }
+.logout-button:hover { background-color: #dc2626; }
+
+.main-columns { 
+    display: flex; 
+    flex-wrap: wrap; 
+    justify-content: center;
+}
+/* .left-column, .right-column { flex: 1; min-width: 300px; } */
+.three-columns {
+    flex: 0 0 33%; /* 3 columns, exactly 1/3 width each */
+    box-sizing: border-box; /* include padding in width calculations */
+    padding: 1%;
+}
+
+section { 
+    background: #F7F7F7; 
+    padding: 3%;
+    margin-bottom: 16px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-radius: 8px;  
+    border: 3px solid var(--blue);
+    min-height: 50%;
+}
+
+/* Forms */
+.habit-form, .goal-form { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.habit-input, .goal-input, .goal-select { padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; flex-grow: 1; }
+.add-button { background-color: #84B183; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.habit-button:hover, .goal-button:hover { background-color: #1d4ed8; }
+
+.habit-list, .goal-list, .event-list { padding-left: 16px; max-height: 200px; overflow-y: auto; background: #f9fafb; border-radius: 4px; }

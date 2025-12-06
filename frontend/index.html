@@ -1,189 +1,205 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hoos Who Poop</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <style>
-        .spinner { border: 4px solid rgba(0,0,0,.1); border-left-color:#3b82f6; border-radius:50%; width:24px; height:24px; animation: spin 1s linear infinite;}
-        @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased">
-<div id="root"></div>
+<body>
+    <div id="root"></div>
 
-<script type="text/babel">
-const { useState, useEffect, useCallback } = React;
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
 
-const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
-const HABIT_API_URL = `${API_BASE_URL}/habit-api.php`;
-const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
-const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
-const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
+        const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
+        const HABIT_API_URL = `${API_BASE_URL}/habit-api.php`;
+        const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
+        const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
+        const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
 
-const LoadingSpinner = () => (
-    <div className="flex justify-center items-center h-24"><div className="spinner"></div></div>
-);
+        // --- Components ---
+        const LoadingSpinner = () => <div className="spinner"></div>;
 
-const ErrorMessage = ({ message, onClear }) => (
-    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
-        <strong className="font-bold">Error: </strong>
-        <span className="block sm:inline">{message}</span>
-        <span className="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onClick={onClear}>✖</span>
-    </div>
-);
-
-function App() {
-    const [user, setUser] = useState(null);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-    const [habits, setHabits] = useState([]);
-    const [goals, setGoals] = useState([]);
-    const [loading, setLoading] = useState({ habits: true, goals: true });
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const response = await fetch(CHECK_SESSION_API_URL, { credentials:'include' });
-                if(!response.ok) throw new Error('Not logged in');
-                const data = await response.json();
-                if(data.status==='success') setUser(data.user);
-                else throw new Error('Not logged in');
-            } catch(e){ window.location.href='login.html'; }
-            finally { setIsCheckingAuth(false); }
-        };
-        checkAuth();
-    }, []);
-
-    const fetchData = useCallback(async (url, key, setter)=>{
-        setLoading(prev => ({...prev,[key]:true}));
-        try{
-            const response = await fetch(url);
-            if(!response.ok) throw new Error(`HTTP error! ${response.status}`);
-            const data = await response.json();
-            setter(data);
-        }catch(e){
-            setError(`Could not fetch ${key}: ${e.message}`);
-        }finally{
-            setLoading(prev => ({...prev,[key]:false}));
-        }
-    }, []);
-
-    useEffect(()=>{
-        if(user){
-            fetchData(HABIT_API_URL,'habits',setHabits);
-            fetchData(GOAL_API_URL,'goals',setGoals);
-        }
-    },[user,fetchData]);
-
-    const handleHabitAdded = (newHabit)=>setHabits(prev=>[newHabit,...prev]);
-    const handleGoalAdded = ()=>fetchData(GOAL_API_URL,'goals',setGoals);
-
-    const handleLogout = async ()=>{
-        try{ await fetch(LOGOUT_API_URL,{method:'POST',credentials:'include'}); }
-        finally{ window.location.href='login.html'; }
-    };
-
-    if(isCheckingAuth) return <div className="flex items-center justify-center min-h-screen"><LoadingSpinner/></div>;
-
-    return (
-        <div className="container mx-auto p-4 max-w-4xl">
-            <header className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-blue-600">HoosWhoPoop</h1>
-                <div className="flex justify-between items-center mt-2">
-                    <span/>
-                    <p className="text-lg text-gray-700 mt-2">
-                        Hello pooper, <span className="font-mono bg-blue-100 px-2 py-1 rounded">{user.username}</span>
-                    </p>
-                    <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition text-sm">Logout</button>
-                </div>
-            </header>
-
-            {error && <ErrorMessage message={error} onClear={()=>setError(null)} />}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-8">
-                    <HabitManager habits={habits} loading={loading.habits} onHabitAdded={handleHabitAdded} setError={setError}/>
-                    <GoalManager habits={habits} goals={goals} loading={loading.goals} onGoalAdded={handleGoalAdded} setError={setError}/>
-                </div>
+        const ErrorMessage = ({ message, onClear }) => (
+            <div className="error-message">
+                <strong>Error: </strong>
+                <span>{message}</span>
+                <span className="close" onClick={onClear}>✖</span>
             </div>
-        </div>
-    );
-}
+        );
 
-// --- HabitManager ---
-function HabitManager({habits,loading,onHabitAdded,setError}){
-    const [newHabit,setNewHabit]=useState('');
-    const handleSubmit=async e=>{
-        e.preventDefault();
-        if(!newHabit.trim()) return;
-        try{
-            const res=await fetch(HABIT_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:newHabit})});
-            const data=await res.json();
-            if(!res.ok || data.status==='error') throw new Error(data.message||'Failed to add habit.');
-            onHabitAdded(data.habit);
-            setNewHabit('');
-        }catch(e){ setError(`Failed to add habit: ${e.message}`); }
-    };
-    return (
-        <section className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">1. Habits</h2>
-            <form onSubmit={handleSubmit} className="flex space-x-2 mb-4">
-                <input type="text" value={newHabit} onChange={e=>setNewHabit(e.target.value)} placeholder="Add new habit category" className="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-                <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition">Add</button>
-            </form>
-            <h3 className="text-lg font-medium mb-2">Existing Habits:</h3>
-            {loading?<LoadingSpinner/>:(
-                <ul className="list-disc list-inside h-32 overflow-y-auto bg-gray-50 p-2 rounded-md">
-                    {habits.map(h=><li key={`${h.user_id}-${h.habit_id}`} className="text-gray-700">{h.category} (ID: {h.habit_id})</li>)}
-                </ul>
-            )}
-        </section>
-    );
-}
+        function App() {
+            const [user, setUser] = useState(null);
+            const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+            const [habits, setHabits] = useState([]);
+            const [goals, setGoals] = useState([]);
+            const [loading, setLoading] = useState({ habits: true, goals: true});
+            const [error, setError] = useState(null);
 
-// --- GoalManager ---
-function GoalManager({habits,goals,loading,onGoalAdded,setError}){
-    const [selectedHabit,setSelectedHabit]=useState('');
-    const [deadline,setDeadline]=useState('');
-    const [goalTime,setGoalTime]=useState('');
-    const handleSubmit=async e=>{
-        e.preventDefault();
-        if(!selectedHabit || !deadline || !goalTime){ setError("Please fill out all goal fields."); return;}
-        try{
-            const res=await fetch(GOAL_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({habit_id:parseInt(selectedHabit),deadline,goal_time:parseInt(goalTime)})});
-            const data=await res.json();
-            if(!res.ok || data.status==='error') throw new Error(data.message||'Failed to add goal.');
-            onGoalAdded(data.goal);
-            setSelectedHabit(''); setDeadline(''); setGoalTime('');
-        }catch(e){ setError(`Failed to add goal: ${e.message}`); }
-    };
-    return (
-        <section className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">2. Goals</h2>
-            <form onSubmit={handleSubmit} className="space-y-4 mb-4">
-                <select value={selectedHabit} onChange={e=>setSelectedHabit(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
-                    <option value="">Select a habit...</option>
-                    {habits.map(h=><option key={h.habit_id} value={h.habit_id}>{h.category}</option>)}
-                </select>
-                <input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md"/>
-                <input type="number" value={goalTime} onChange={e=>setGoalTime(e.target.value)} placeholder="Goal Time (e.g., 10 hours)" className="w-full p-2 border border-gray-300 rounded-md"/>
-                <button type="submit" className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition">Add Goal</button>
-            </form>
-            <h3 className="text-lg font-medium mb-2">Existing Goals:</h3>
-            {loading?<LoadingSpinner/>:(
-                <ul className="list-disc list-inside h-32 overflow-y-auto bg-gray-50 p-2 rounded-md">
-                    {goals.map(g=><li key={g.goal_id} className="text-gray-700">{g.category} - {g.goal_time} hrs by {g.deadline} (ID: {g.goal_id})</li>)}
-                </ul>
-            )}
-        </section>
-    );
-}
+            useEffect(() => {
+                const checkAuth = async () => {
+                    try {
+                        const response = await fetch(CHECK_SESSION_API_URL, { credentials: 'include' });
+                        if (!response.ok) throw new Error('Not logged in');
+                        const data = await response.json();
+                        if (data.status === 'success') setUser(data.user);
+                        else throw new Error('Not logged in');
+                    } catch (e) {
+                        window.location.href = 'login.html';
+                    } finally { setIsCheckingAuth(false); }
+                };
+                checkAuth();
+            }, []);
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-</script>
+            const fetchData = useCallback(async (url, key, setter) => {
+                setLoading(prev => ({ ...prev, [key]: true }));
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
+                    const data = await response.json();
+                    setter(data);
+                } catch (e) {
+                    setError(`Could not fetch ${key}: ${e.message}`);
+                } finally {
+                    setLoading(prev => ({ ...prev, [key]: false }));
+                }
+            }, []);
+
+            useEffect(() => {
+                if (user) {
+                    fetchData(HABIT_API_URL, 'habits', setHabits);
+                    fetchData(GOAL_API_URL, 'goals', setGoals);
+                }
+            }, [user, fetchData]);
+
+            const handleLogout = async () => {
+                try { await fetch(LOGOUT_API_URL, { method: 'POST', credentials: 'include' }); }
+                finally { window.location.href = 'login.html'; }
+            };
+
+            if (isCheckingAuth) return <LoadingSpinner />;
+
+            return (
+                <div>
+                    <NavBar user={user} handleLogout={handleLogout}/>
+
+                    {error && <ErrorMessage message={error} onClear={() => setError(null)} />}
+                    <div className="content-container">
+                        <div className="main-columns">
+                            <div className="three-columns">
+                                <HabitManager habits={habits} loading={loading.habits} />
+                            </div>
+                            <div className="three-columns">
+                                <GoalManager goals={goals} habits={habits} loading={loading.goals} />
+                            </div>
+                            <div className="three-columns">
+                                <GoalManager goals={goals} habits={habits} loading={loading.goals} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function NavBar({user, handleLogout}) {
+            return (
+                <header className="app-header">
+                    <h1>HoosWhoPoop</h1>
+                    <p>Hello pooper, <span className="username">{user.username}</span></p>
+                    <ul className="navigation">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="events.html">Entries</a></li>
+                        <li><a href="rooms.html">Rooms</a></li>
+                    </ul>
+                    <button className="logout-button" onClick={handleLogout}>Logout</button>
+                </header>
+            )
+        }
+
+        function HabitManager({ habits, loading }) {
+            const [newHabit, setNewHabit] = useState('');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!newHabit.trim()) return;
+                try {
+                    const response = await fetch(HABIT_API_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ category: newHabit })
+                    });
+                    const result = await response.json();
+                    if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add habit');
+                    setNewHabit('');
+                    habits.unshift(result.habit);
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+
+            return (
+                <section className="habit-section">
+                    <h2>Habits</h2>
+                    <form onSubmit={handleSubmit} className="habit-form">
+                        <input value={newHabit} onChange={e=>setNewHabit(e.target.value)} placeholder="Add new habit" className="habit-input" />
+                        <button type="submit" className="add-button">Add Habit</button>
+                    </form>
+                    {loading ? <LoadingSpinner /> :
+                        <ul className="habit-list">{habits.map(h => <li key={h.habit_id}>{h.category}</li>)}</ul>
+                    }
+                </section>
+            );
+        }
+
+        function GoalManager({ goals, habits, loading }) {
+            const [selectedHabit, setSelectedHabit] = useState('');
+            const [deadline, setDeadline] = useState('');
+            const [goalTime, setGoalTime] = useState('');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!selectedHabit || !deadline || !goalTime) return;
+                try {
+                    const response = await fetch(GOAL_API_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ habit_id: parseInt(selectedHabit), deadline, goal_time: parseInt(goalTime) })
+                    });
+                    const result = await response.json();
+                    if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add goal');
+                    setSelectedHabit(''); setDeadline(''); setGoalTime('');
+                    goals.unshift(result.goal);
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+
+            return (
+                <section className="goal-section">
+                    <h2>Goals</h2>
+                    <form onSubmit={handleSubmit} className="goal-form">
+                        <select value={selectedHabit} onChange={e=>setSelectedHabit(e.target.value)} className="goal-select">
+                            <option value="">Select habit...</option>
+                            {habits.map(h => <option key={h.habit_id} value={h.habit_id}>{h.category}</option>)}
+                        </select>
+                        <input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)} className="goal-input" />
+                        <input type="number" value={goalTime} onChange={e=>setGoalTime(e.target.value)} placeholder="Number of hours" className="goal-input" />
+                        <button type="submit" className="add-button">Add Goal</button>
+                    </form>
+                    {loading ? <LoadingSpinner /> :
+                        <ul className="goal-list">{goals.map(g => <li key={g.goal_id}>{g.category} - {g.goal_time} hrs by {g.deadline}</li>)}</ul>
+                    }
+                </section>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
 </body>
 </html>

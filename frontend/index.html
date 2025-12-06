@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hoos Who Poop</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -151,7 +152,19 @@
                         <button type="submit" className="add-button">Add Habit</button>
                     </form>
                     {loading ? <LoadingSpinner /> :
-                        <ul className="habit-list">{habits.map(h => <li key={h.habit_id}>{h.category}</li>)}</ul>
+                        <ul className="list">
+                            {habits.map(h => (
+                                <li key={h.habit_id} className="goal-item">
+                                <span className="habit-text">
+                                    {h.category}
+                                </span>
+                                <span className="list-actions">
+                                    <i className="fa-solid fa-pen edit-icon"></i>
+                                    <i className="fa-solid fa-trash delete-icon"></i>
+                                </span>
+                                </li>
+                            ))}
+                        </ul>
                     }
                 </section>
             );
@@ -180,6 +193,15 @@
                 }
             };
 
+            const handleDelete = async(goalID) => {
+                /*TODO: use sql api to delete goal*/
+            }
+
+            const handleEdit = async(goalID) => {
+                /*pop up form or use inline editing like in a todolist (code examples online you can use)*/
+                /*TODO: use sql api to update goal*/
+            }
+
             return (
                 <section className="goal-section">
                     <h2>Goals</h2>
@@ -193,7 +215,23 @@
                         <button type="submit" className="add-button">Add Goal</button>
                     </form>
                     {loading ? <LoadingSpinner /> :
-                        <ul className="goal-list">{goals.map(g => <li key={g.goal_id}>{g.category} - {g.goal_time} hrs by {g.deadline}</li>)}</ul>
+                        <ul className="list">
+                            {goals.map(g => (
+                                <li key={g.goal_id} className="goal-item">
+                                <span className="goal-text">
+                                    {g.category} - {g.goal_time} hrs by {g.deadline}
+                                </span>
+                                <span className="list-actions">
+                                    <button className="icon-button edit-item" onClick={()=>handleEdit(g.goal_id)}> 
+                                        <i className="fa-solid fa-pen edit-icon"></i>
+                                    </button>
+                                    <button className="icon-button delete-item" onClick={()=>handleDelete(g.goal_id)}> 
+                                        <i className="fa-solid fa-trash delete-icon"></i>
+                                    </button>
+                                </span>
+                                </li>
+                            ))}
+                        </ul>
                     }
                 </section>
             );

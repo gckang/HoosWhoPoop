@@ -99,4 +99,30 @@ function filterEvents($db, $user_id, $goal_id, $day) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function editEventForUser($db, $user_id, $event_id, $goal_id, $day, $start_time, $end_time){
+    $stmt = $db->prepare("UPDATE event SET goal_id=:goal_id, day=:day, start_time=:start_time, end_time=:end_time WHERE user_id=:user_id AND event_id=:event_id");
+    
+    $stmt->bindValue(':goal_id', $goal_id);
+    $stmt->bindValue(':day', $day);
+    $stmt->bindValue(':start_time', $start_time);
+    $stmt->bindValue(':end_time', $end_time);
+    $stmt->bindValue(':user_id', $user_id);
+    $stmt->bindValue(':event_id', $event_id);
+    
+    $stmt->execute();
+    
+    return $stmt->rowCount() > 0;
+}
+
+function deleteEventForUser($db, $user_id, $event_id){
+    $stmt = $db->prepare("DELETE FROM event WHERE user_id=:user_id AND event_id=:event_id");
+    
+    $stmt->bindValue(':user_id', $user_id);
+    $stmt->bindValue(':event_id', $event_id);
+
+    $stmt->execute();
+
+    return $stmt->rowCount() > 0;
+}
+
 ?>

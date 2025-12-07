@@ -673,28 +673,85 @@
         function EventDisplay({goals, events, setEvents, loading}) {
             const [selectedGoal, setSelectedGoal] = useState('');
             const [selectedDate, setSelectedDate] = useState('');
+            const [editingEventId, setEditingEventId] = useState(null);
+            const [editData, setEditData] = useState({ start_time: '', end_time: '', day: '', goal_id: '' });
 
+            console.log("Events loaded:", events);
+            
             const handleFilter = async (e) => {
                 e.preventDefault();
-
                 try {
                     const response = await fetch(EVENT_FILTER_URL, {
-                        method:"POST",
-                        headers:{"Content-Type":"application/json"},
-                        body:JSON.stringify({
-                            action:"filter_events",
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: "filter_events",
                             goal_id: selectedGoal ? parseInt(selectedGoal) : null,
                             day: selectedDate || null
                         })
                     });
 
                     const result = await response.json();
-                    if(!response.ok || result.status === "error")
-                        throw new Error(result.message);
+                    if(!response.ok || result.status === "error") throw new Error(result.message);
 
                     setEvents(result.events);
 
-                } catch(e){
+                } catch(e) {
+                    console.error(e);
+                }
+            };
+
+            const startEdit = (event) => {
+                setEditingEventId(event.event_id);
+                setEditData({
+                    start_time: event.start_time,
+                    end_time: event.end_time,
+                    day: event.day,
+                    goal_id: event.goal_id
+                });
+            };
+
+            const cancelEdit = () => {
+                setEditingEventId(null);
+                setEditData({ start_time: '', end_time: '', day: '', goal_id: '' });
+            };
+
+            const saveEdit = async (eventId) => {
+                try {
+                    const res = await fetch(EVENT_API_URL, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ 
+                            event_id: eventId,
+                            start_time: editData.start_time,
+                            end_time: editData.end_time,
+                            day: editData.day,
+                            goal_id: editData.goal_id
+                        })
+                    });
+                    const result = await res.json();
+                    if(result.status !== 'success') throw new Error(result.message);
+
+                    setEvents(prev => prev.map(ev => ev.event_id === eventId ? { ...ev, ...editData } : ev));
+                    cancelEdit();
+                } catch(e) {
+                    console.error(e);
+                }
+            };
+
+            const deleteEvent = async (eventId) => {
+                //console.log("Deleting event:", eventId);
+                try {
+                    const res = await fetch(EVENT_API_URL, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ event_id: eventId })
+                    });
+                    const result = await res.json();
+                    if(result.status !== 'success') throw new Error(result.message);
+
+                    setEvents(prev => prev.filter(ev => ev.event_id !== eventId));
+                } catch(e) {
                     console.error(e);
                 }
             };
@@ -714,7 +771,6 @@
                         </select>
 
                         <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="poo-input"/>
-
                         <button type="submit" className="add-button">Filter</button>
                     </form>
 
@@ -722,7 +778,30 @@
                         <ul className="list">
                             {events.map(ev => (
                                 <li key={ev.event_id} className="poo-item">
-                                    {ev.category}: {ev.day} from {ev.start_time} to {ev.end_time}
+                                    {editingEventId === ev.event_id ? (
+                                        <div className="edit-event">
+                                            <select value={editData.goal_id} onChange={e => setEditData({...editData, goal_id: e.target.value})}>
+                                                {goals.map(g => (
+                                                    <option key={g.goal_id} value={g.goal_id}>
+                                                        {g.category} (by {g.deadline})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <input type="date" value={editData.day} onChange={e => setEditData({...editData, day: e.target.value})}/>
+                                            <input type="time" value={editData.start_time} onChange={e => setEditData({...editData, start_time: e.target.value})}/>
+                                            <input type="time" value={editData.end_time} onChange={e => setEditData({...editData, end_time: e.target.value})}/>
+                                            <button onClick={() => saveEdit(ev.event_id)} className="icon-button">✔</button>
+                                            <button onClick={cancelEdit} className="icon-button">✖</button>
+                                        </div>
+                                    ) : (
+                                        <React.Fragment>
+                                            {ev.category}: {ev.day} from {ev.start_time} to {ev.end_time}
+                                            <span className="list-actions">
+                                                <i className="fa-solid fa-pen edit-icon" onClick={() => startEdit(ev)}></i>
+                                                <i className="fa-solid fa-trash delete-icon" onClick={() => deleteEvent(ev.event_id)}></i>
+                                            </span>
+                                        </React.Fragment>
+                                    )}
                                 </li>
                             ))}
                         </ul>
@@ -730,6 +809,7 @@
                 </section>
             );
         }
+
 
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);

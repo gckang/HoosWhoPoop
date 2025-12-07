@@ -127,8 +127,94 @@
             )
         }
 
-        function HabitManager({ habits, loading }) {
-            const [newHabit, setNewHabit] = useState('');
+        function HabitItem({ habit, onDelete, onEdit }) {
+            const [isEditing, setIsEditing] = React.useState(false);
+            const [editValue, setEditValue] = React.useState(habit.category);
+
+            const handleSave = async () => {
+                if (!editValue.trim()) return;
+                const success = await onEdit(habit.habit_id, editValue);
+                if (success) setIsEditing(false);
+            };
+
+            const handleCancel = () => {
+                setIsEditing(false);
+                setEditValue(habit.category);
+            };
+
+            return (
+                <li className="goal-item">
+                    {isEditing ? (
+                        <React.Fragment>
+                            <input
+                                className="habit-input"
+                                value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                autoFocus
+                            />
+                            <button onClick={handleSave} className="icon-button">✔</button>
+                            <button onClick={handleCancel} className="icon-button">✖</button>
+                        </React.Fragment>
+                    ) : (
+                        <React.Fragment>
+                            <span className="habit-text">{habit.category}</span>
+                            <span className="list-actions">
+                                <i
+                                    className="fa-solid fa-pen edit-icon"
+                                    onClick={() => setIsEditing(true)}
+                                ></i>
+                                <i
+                                    className="fa-solid fa-trash delete-icon"
+                                    onClick={() => onDelete(habit.habit_id)}
+                                ></i>
+                            </span>
+                        </React.Fragment>
+                    )}
+                </li>
+            );
+        }
+
+        function HabitManager({ habits, loading, setHabits }) {
+            const handleDelete = async (habitId) => {
+                try {
+                    const res = await fetch(HABIT_API_URL, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ habit_id: habitId })
+                    });
+                    const result = await res.json();
+                    if (result.status !== 'success') throw new Error(result.message);
+
+                    // Update state
+                    setHabits(prev => prev.filter(h => h.habit_id !== habitId));
+                    return true;
+                } catch (e) {
+                    console.error(e);
+                    return false;
+                }
+            };
+
+            const handleEdit = async (habitId, newCategory) => {
+                try {
+                    const res = await fetch(HABIT_API_URL, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ habit_id: habitId, category: newCategory })
+                    });
+                    const result = await res.json();
+                    if (result.status !== 'success') throw new Error(result.message);
+
+                    setHabits(prev =>
+                        prev.map(h => h.habit_id === habitId ? { ...h, category: newCategory } : h)
+                    );
+                    return true;
+                } catch (e) {
+                    console.error(e);
+                    return false;
+                }
+            };
+
+            const [newHabit, setNewHabit] = React.useState('');
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
@@ -136,13 +222,14 @@
                 try {
                     const response = await fetch(HABIT_API_URL, {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ category: newHabit })
                     });
                     const result = await response.json();
                     if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add habit');
+
                     setNewHabit('');
-                    habits.unshift(result.habit);
+                    setHabits(prev => [result.habit, ...prev]); // Add new habit at top
                 } catch (e) {
                     console.error(e);
                 }
@@ -152,27 +239,31 @@
                 <section className="habit-section">
                     <h2>Habits</h2>
                     <form onSubmit={handleSubmit} className="habit-form">
-                        <input value={newHabit} onChange={e=>setNewHabit(e.target.value)} placeholder="Add new habit" className="habit-input" />
+                        <input
+                            value={newHabit}
+                            onChange={e => setNewHabit(e.target.value)}
+                            placeholder="Add new habit"
+                            className="habit-input"
+                        />
                         <button type="submit" className="add-button">Add Habit</button>
                     </form>
-                    {loading ? <LoadingSpinner /> :
+
+                    {loading ? <div className="spinner"></div> :
                         <ul className="list">
                             {habits.map(h => (
-                                <li key={h.habit_id} className="goal-item">
-                                <span className="habit-text">
-                                    {h.category}
-                                </span>
-                                <span className="list-actions">
-                                    <i className="fa-solid fa-pen edit-icon"></i>
-                                    <i className="fa-solid fa-trash delete-icon"></i>
-                                </span>
-                                </li>
+                                <HabitItem
+                                    key={h.habit_id}
+                                    habit={h}
+                                    onDelete={handleDelete}
+                                    onEdit={handleEdit}
+                                />
                             ))}
                         </ul>
                     }
                 </section>
             );
         }
+
 
         function GoalManager({ goals, habits, loading }) {
             const [selectedHabit, setSelectedHabit] = useState('');

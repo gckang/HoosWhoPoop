@@ -66,4 +66,38 @@ function addGoalForUser($db, $user_id, $habit_id, $deadline, $goal_time)
         'goal_time' => $goal_time
     ];
 }
+
+function filterGoals($db, $user_id, /*the filter fields lol */) {
+    /* chat method
+    $data = json_decode(file_get_contents("php://input"), true);
+
+$action = $data["action"] ?? null;
+
+if ($action === "filter_goals") {
+
+    $goal_id = $data["goal_id"] ?? null;
+    $day = $data["day"] ?? null;
+
+    $sql = "SELECT * FROM Goal WHERE 1=1";
+    $params = [];
+
+    if (!empty($goal_id)) {
+        $sql .= " AND goal_id = ?";
+        $params[] = $goal_id;
+    }
+
+    if (!empty($day)) {
+        $sql .= " AND deadline = ?";
+        $params[] = $day;
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    echo json_encode($stmt->fetchAll());
+    exit;
+}
+
+     */
+}
 ?>

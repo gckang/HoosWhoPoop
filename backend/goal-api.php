@@ -38,6 +38,7 @@ try {
             break;
 
         case 'POST':
+            /*TO DO : switch($action) which will be filter_events or post_events. implement filter_events */
             $data = json_decode(file_get_contents('php://input'));
             if (empty($data) || !isset($data->habit_id) || !isset($data->deadline) || !isset($data->goal_time)) {
                 http_response_code(400);

@@ -13,7 +13,7 @@ function getAllEventsForUser($db, $user_id)
 {
     // This is a 3-table join to get the habit category from the event
     $stmt = $db->prepare(
-        "SELECT e.event_id, e.day, e.start_time, e.end_time, h.category
+        "SELECT e.event_id, e.day, e.start_time, e.end_time, e.goal_id, h.category
          FROM event e
          JOIN goal g ON e.user_id = g.user_id AND e.goal_id = g.goal_id
          JOIN habit h ON g.user_id = h.user_id AND g.habit_id = h.habit_id
@@ -110,7 +110,7 @@ function editEventForUser($db, $user_id, $event_id, $goal_id, $day, $start_time,
     $stmt->bindValue(':event_id', $event_id);
     
     $stmt->execute();
-    
+
     return $stmt->rowCount() > 0;
 }
 

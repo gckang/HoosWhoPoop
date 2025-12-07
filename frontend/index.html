@@ -676,7 +676,7 @@
             const [editingEventId, setEditingEventId] = useState(null);
             const [editData, setEditData] = useState({ start_time: '', end_time: '', day: '', goal_id: '' });
 
-            console.log("Events loaded:", events);
+            //console.log("Events loaded:", events);
             
             const handleFilter = async (e) => {
                 e.preventDefault();
@@ -704,6 +704,7 @@
             const startEdit = (event) => {
                 setEditingEventId(event.event_id);
                 setEditData({
+                    event_id: event.event_id,
                     start_time: event.start_time,
                     end_time: event.end_time,
                     day: event.day,
@@ -713,10 +714,12 @@
 
             const cancelEdit = () => {
                 setEditingEventId(null);
-                setEditData({ start_time: '', end_time: '', day: '', goal_id: '' });
+                setEditData({ event_id: '', start_time: '', end_time: '', day: '', goal_id: '' });
             };
 
             const saveEdit = async (eventId) => {
+                const goalIdInt = parseInt(editData.goal_id);
+
                 try {
                     const res = await fetch(EVENT_API_URL, {
                         method: "PUT",
@@ -726,7 +729,7 @@
                             start_time: editData.start_time,
                             end_time: editData.end_time,
                             day: editData.day,
-                            goal_id: editData.goal_id
+                            goal_id: goalIdInt
                         })
                     });
                     const result = await res.json();

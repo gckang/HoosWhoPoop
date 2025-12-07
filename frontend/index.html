@@ -11,6 +11,9 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!--extracted navbar-->
+    <script src="navBar.js"></script>
 </head>
 <body>
     <div id="root"></div>
@@ -20,8 +23,8 @@
 
         // --- API URLs ---
         // CHANGE B/W LOCAL AND UVA SERVER
-        //const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
-        const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
+        const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
+        //const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
 
         const HABIT_API_URL = `${API_BASE_URL}/habit-api.php`;
         const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
@@ -92,7 +95,7 @@
 
             return (
                 <div>
-                    <NavBar user={user} handleLogout={handleLogout}/>
+                    {NavBar({user, handleLogout})}
 
                     {error && <ErrorMessage message={error} onClear={() => setError(null)} />}
                     <div className="content-container">
@@ -110,21 +113,6 @@
                     </div>
                 </div>
             );
-        }
-
-        function NavBar({user, handleLogout}) {
-            return (
-                <header className="app-header">
-                    <h1>HoosWhoPoop</h1>
-                    <p>Hello pooper, <span className="username">{user.username}</span></p>
-                    <ul className="navigation">
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="events.html">Entries</a></li>
-                        <li><a href="rooms.html">Rooms</a></li>
-                    </ul>
-                    <button className="logout-button" onClick={handleLogout}>Logout</button>
-                </header>
-            )
         }
 
         function HabitManager({ habits, loading }) {
@@ -151,14 +139,14 @@
             return (
                 <section className="habit-section">
                     <h2>Habits</h2>
-                    <form onSubmit={handleSubmit} className="habit-form">
-                        <input value={newHabit} onChange={e=>setNewHabit(e.target.value)} placeholder="Add new habit" className="habit-input" />
+                    <form onSubmit={handleSubmit} className="poo-form">
+                        <input value={newHabit} onChange={e=>setNewHabit(e.target.value)} placeholder="Add new habit" className="poo-input" />
                         <button type="submit" className="add-button">Add Habit</button>
                     </form>
                     {loading ? <LoadingSpinner /> :
                         <ul className="list">
                             {habits.map(h => (
-                                <li key={h.habit_id} className="goal-item">
+                                <li key={h.habit_id} className="poo-item">
                                 <span className="habit-text">
                                     {h.category}
                                 </span>
@@ -209,19 +197,19 @@
             return (
                 <section className="goal-section">
                     <h2>Goals</h2>
-                    <form onSubmit={handleSubmit} className="goal-form">
-                        <select value={selectedHabit} onChange={e=>setSelectedHabit(e.target.value)} className="goal-select">
+                    <form onSubmit={handleSubmit} className="poo-form">
+                        <select value={selectedHabit} onChange={e=>setSelectedHabit(e.target.value)} className="poo-select">
                             <option value="">Select habit...</option>
                             {habits.map(h => <option key={h.habit_id} value={h.habit_id}>{h.category}</option>)}
                         </select>
-                        <input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)} className="goal-input" />
-                        <input type="number" value={goalTime} onChange={e=>setGoalTime(e.target.value)} placeholder="Number of hours" className="goal-input" />
+                        <input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)} className="poo-input" />
+                        <input type="number" value={goalTime} onChange={e=>setGoalTime(e.target.value)} placeholder="Number of hours" className="poo-input" />
                         <button type="submit" className="add-button">Add Goal</button>
                     </form>
                     {loading ? <LoadingSpinner /> :
                         <ul className="list">
                             {goals.map(g => (
-                                <li key={g.goal_id} className="goal-item">
+                                <li key={g.goal_id} className="poo-item">
                                 <span className="goal-text">
                                     {g.category} - {g.goal_time} hrs by {g.deadline}
                                 </span>

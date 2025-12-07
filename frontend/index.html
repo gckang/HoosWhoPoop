@@ -119,6 +119,16 @@
 
             const goalProgress = computeGoalProgress();
 
+            const averagePercent = React.useMemo(() => {
+                if (!goals.length) return 0;
+                let totalPercent = 0;
+                goals.forEach(goal => {
+                    const prog = goalProgress[goal.goal_id] || 0;
+                    totalPercent += Math.min(100, (prog / goal.goal_time) * 100);
+                });
+                return totalPercent / goals.length;
+            }, [goals, goalProgress]);
+
 
             if (isCheckingAuth) return <LoadingSpinner />;
 
@@ -502,21 +512,6 @@
                     return false;
                 }
             };
-
-            const averagePercent = React.useMemo(() => {
-                if (!goals.length) return 0;
-
-                let totalPercent = 0;
-
-                goals.forEach(goal => {
-                    const progress = calculateProgress(goal.goal_id);  // you already have this logic
-                    const percent = Math.min(100, (progress / goal.goal_time) * 100);
-
-                    totalPercent += percent;
-                });
-
-                return totalPercent / goals.length;
-            }, [goals]);
 
             return (
                 <section className="goal-section">

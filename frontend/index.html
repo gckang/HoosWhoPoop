@@ -98,13 +98,13 @@
                     <div className="content-container">
                         <div className="main-columns">
                             <div className="three-columns">
-                                <HabitManager habits={habits} loading={loading.habits} />
+                                <HabitManager habits={habits} loading={loading.habits} setHabits={setHabits}/>
                             </div>
                             <div className="three-columns">
-                                <GoalManager goals={goals} habits={habits} loading={loading.goals} />
+                                <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals}/>
                             </div>
                             <div className="three-columns">
-                                <GoalManager goals={goals} habits={habits} loading={loading.goals} />
+                                <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals}/>
                             </div>
                         </div>
                     </div>
@@ -264,73 +264,237 @@
             );
         }
 
+        function GoalItem({ goal, habits, onDelete, onEdit }) {
+            const [isEditing, setIsEditing] = React.useState(false);
 
-        function GoalManager({ goals, habits, loading }) {
-            const [selectedHabit, setSelectedHabit] = useState('');
-            const [deadline, setDeadline] = useState('');
-            const [goalTime, setGoalTime] = useState('');
+            const [editHabit, setEditHabit] = React.useState(goal.habit_id);
+            const [editDeadline, setEditDeadline] = React.useState(goal.deadline);
+            const [editTime, setEditTime] = React.useState(goal.goal_time);
 
+            const handleSave = async () => {
+                if (!editHabit || !editDeadline || !editTime) return;
+
+                const success = await onEdit(
+                    goal.goal_id,
+                    parseInt(editHabit),
+                    editDeadline,
+                    parseInt(editTime)
+                );
+
+                if (success) setIsEditing(false);
+            };
+
+            const handleCancel = () => {
+                setIsEditing(false);
+                setEditHabit(goal.habit_id);
+                setEditDeadline(goal.deadline);
+                setEditTime(goal.goal_time);
+            };
+
+            const getHabitName = (id) => {
+                if (!habits || habits.length === 0) return "Loading...";
+                const numericId = parseInt(id);
+                const habit = habits.find(h => parseInt(h.habit_id) === numericId);
+                return habit ? habit.category : "Unknown";
+            };
+
+            return (
+                <li className="goal-item">
+                    {isEditing ? (
+                        <React.Fragment>
+                            <select
+                                className="goal-select"
+                                value={editHabit}
+                                onChange={(e) => setEditHabit(e.target.value)}
+                            >
+                                {habits.map((h) => (
+                                    <option key={h.habit_id} value={h.habit_id}>
+                                        {h.category}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <input
+                                type="date"
+                                className="goal-input"
+                                value={editDeadline}
+                                onChange={(e) => setEditDeadline(e.target.value)}
+                            />
+
+                            <input
+                                type="number"
+                                className="goal-input"
+                                value={editTime}
+                                onChange={(e) => setEditTime(e.target.value)}
+                            />
+
+                            <button onClick={handleSave} className="icon-button">✔</button>
+                            <button onClick={handleCancel} className="icon-button">✖</button>
+                        </React.Fragment>
+                    ) : (
+                        <React.Fragment>
+                            <span className="goal-text">
+                                {getHabitName(goal.habit_id)} — {goal.goal_time} hrs by {goal.deadline}
+                            </span>
+
+                            <span className="list-actions">
+                                <i
+                                    className="fa-solid fa-pen edit-icon"
+                                    onClick={() => setIsEditing(true)}
+                                ></i>
+                                <i
+                                    className="fa-solid fa-trash delete-icon"
+                                    onClick={() => onDelete(goal.goal_id)}
+                                ></i>
+                            </span>
+                        </React.Fragment>
+                    )}
+                </li>
+            );
+        }
+
+        function GoalManager({ goals, habits, loading, setGoals }) {
+            const [selectedHabit, setSelectedHabit] = React.useState("");
+            const [deadline, setDeadline] = React.useState("");
+            const [goalTime, setGoalTime] = React.useState("");
+
+            // ADD GOAL
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 if (!selectedHabit || !deadline || !goalTime) return;
+
                 try {
-                    const response = await fetch(GOAL_API_URL, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ habit_id: parseInt(selectedHabit), deadline, goal_time: parseInt(goalTime) })
+                    const res = await fetch(GOAL_API_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            habit_id: parseInt(selectedHabit),
+                            deadline,
+                            goal_time: parseInt(goalTime)
+                        }),
                     });
-                    const result = await response.json();
-                    if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add goal');
-                    setSelectedHabit(''); setDeadline(''); setGoalTime('');
-                    goals.unshift(result.goal);
+
+                    const result = await res.json();
+                    if (!res.ok || result.status === "error")
+                        throw new Error(result.message);
+
+                    setGoals((prev) => [result.goal, ...prev]);
+
+                    setSelectedHabit("");
+                    setDeadline("");
+                    setGoalTime("");
                 } catch (e) {
                     console.error(e);
                 }
             };
 
-            const handleDelete = async(goalID) => {
-                /*TODO: use sql api to delete goal*/
-            }
+            // DELETE GOAL
+            const handleDelete = async (goalId) => {
+                try {
+                    const res = await fetch(GOAL_API_URL, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ goal_id: goalId }),
+                    });
 
-            const handleEdit = async(goalID) => {
-                /*pop up form or use inline editing like in a todolist (code examples online you can use)*/
-                /*TODO: use sql api to update goal*/
-            }
+                    const result = await res.json();
+                    if (result.status !== "success") throw new Error(result.message);
+
+                    setGoals((prev) => prev.filter((g) => g.goal_id !== goalId));
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+
+            // EDIT GOAL
+            const handleEdit = async (goalId, habitId, deadline, goalTime) => {
+                try {
+                    const res = await fetch(GOAL_API_URL, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            goal_id: goalId,
+                            habit_id: habitId,
+                            deadline,
+                            goal_time: goalTime,
+                        }),
+                    });
+
+                    const result = await res.json();
+                    if (result.status !== "success") throw new Error(result.message);
+
+                    setGoals((prev) =>
+                        prev.map((g) =>
+                            g.goal_id === goalId
+                                ? { ...g, habit_id: habitId, deadline, goal_time: goalTime }
+                                : g
+                        )
+                    );
+
+                    return true;
+                } catch (e) {
+                    console.error(e);
+                    return false;
+                }
+            };
 
             return (
                 <section className="goal-section">
                     <h2>Goals</h2>
+
+                    {/* ADD GOAL */}
                     <form onSubmit={handleSubmit} className="goal-form">
-                        <select value={selectedHabit} onChange={e=>setSelectedHabit(e.target.value)} className="goal-select">
+                        <select
+                            value={selectedHabit}
+                            onChange={(e) => setSelectedHabit(e.target.value)}
+                            className="goal-select"
+                        >
                             <option value="">Select habit...</option>
-                            {habits.map(h => <option key={h.habit_id} value={h.habit_id}>{h.category}</option>)}
+                            {habits.map((h) => (
+                                <option key={h.habit_id} value={h.habit_id}>
+                                    {h.category}
+                                </option>
+                            ))}
                         </select>
-                        <input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)} className="goal-input" />
-                        <input type="number" value={goalTime} onChange={e=>setGoalTime(e.target.value)} placeholder="Number of hours" className="goal-input" />
-                        <button type="submit" className="add-button">Add Goal</button>
+
+                        <input
+                            type="date"
+                            value={deadline}
+                            onChange={(e) => setDeadline(e.target.value)}
+                            className="goal-input"
+                        />
+
+                        <input
+                            type="number"
+                            value={goalTime}
+                            onChange={(e) => setGoalTime(e.target.value)}
+                            className="goal-input"
+                            placeholder="Hours"
+                        />
+
+                        <button className="add-button">Add Goal</button>
                     </form>
-                    {loading ? <LoadingSpinner /> :
+
+                    {/* LIST OF GOALS */}
+                    {loading ? (
+                        <div className="spinner"></div>
+                    ) : (
                         <ul className="list">
-                            {goals.map(g => (
-                                <li key={g.goal_id} className="goal-item">
-                                <span className="goal-text">
-                                    {g.category} - {g.goal_time} hrs by {g.deadline}
-                                </span>
-                                <span className="list-actions">
-                                    <button className="icon-button edit-item" onClick={()=>handleEdit(g.goal_id)}> 
-                                        <i className="fa-solid fa-pen edit-icon"></i>
-                                    </button>
-                                    <button className="icon-button delete-item" onClick={()=>handleDelete(g.goal_id)}> 
-                                        <i className="fa-solid fa-trash delete-icon"></i>
-                                    </button>
-                                </span>
-                                </li>
+                            {goals.map((g) => (
+                                <GoalItem
+                                    key={g.goal_id}
+                                    goal={g}
+                                    habits={habits}
+                                    onDelete={handleDelete}
+                                    onEdit={handleEdit}
+                                />
                             ))}
                         </ul>
-                    }
+                    )}
                 </section>
             );
         }
+
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>

@@ -13,7 +13,7 @@ function getAllGoalsForUser($db, $user_id)
 {
     // Joins 'goal' with 'habit' to get the category name
     $stmt = $db->prepare(
-        "SELECT g.goal_id, g.deadline, g.goal_time, h.category
+        "SELECT g.goal_id, g.habit_id, g.deadline, g.goal_time, h.category
          FROM goal g
          JOIN habit h ON g.user_id = h.user_id AND g.habit_id = h.habit_id
          WHERE g.user_id = :user_id
@@ -67,37 +67,56 @@ function addGoalForUser($db, $user_id, $habit_id, $deadline, $goal_time)
     ];
 }
 
-function filterGoals($db, $user_id, /*the filter fields lol */) {
-    /* chat method
-    $data = json_decode(file_get_contents("php://input"), true);
+/**
+ * Delete a specific goal for a specific user.
+ * @param PDO $db The database connection object
+ * @param int $user_id The ID of the user
+ * @param int $habit_id The ID of the goal (per-user)
+ * @return bool True if a row was deleted, false otherwise
+ */
+function deleteGoalForUser($db, $user_id, $goal_id)
+{
+    $query = "DELETE FROM goal WHERE user_id = :user_id AND goal_id = :goal_id";
 
-$action = $data["action"] ?? null;
+    $stmt = $db->prepare($query);
 
-if ($action === "filter_goals") {
+    $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':goal_id', $goal_id, PDO::PARAM_INT);
 
-    $goal_id = $data["goal_id"] ?? null;
-    $day = $data["day"] ?? null;
+    $stmt->execute();
 
-    $sql = "SELECT * FROM Goal WHERE 1=1";
-    $params = [];
-
-    if (!empty($goal_id)) {
-        $sql .= " AND goal_id = ?";
-        $params[] = $goal_id;
-    }
-
-    if (!empty($day)) {
-        $sql .= " AND deadline = ?";
-        $params[] = $day;
-    }
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-
-    echo json_encode($stmt->fetchAll());
-    exit;
+    // rowCount() returns number of deleted rows, so below return T/F
+    return $stmt->rowCount() > 0;
 }
 
-     */
+/**
+ * Edit an existing habit for a user.
+ * @param PDO $db
+ * @param int $user_id
+ * @param int $goal_id
+ * @param int $habit_id The habit this goal belongs to
+ * @param string $deadline The goal deadline (YYYY-MM-DD)
+ * @param int $goal_time The required hours for the goal
+ * @return bool
+ */
+function editGoalForUser($db, $user_id, $goal_id, $habit_id, $deadline, $goal_time)
+{
+    $query = "UPDATE goal
+              SET habit_id = :habit_id,
+                  deadline = :deadline,
+                  goal_time = :goal_time
+              WHERE user_id = :user_id AND goal_id = :goal_id";
+
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':habit_id', $habit_id, PDO::PARAM_INT);
+    $stmt->bindValue(':deadline', $deadline, PDO::PARAM_STR);
+    $stmt->bindValue(':goal_time', $goal_time, PDO::PARAM_INT);
+    $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':goal_id', $goal_id, PDO::PARAM_INT);
+
+    $stmt->execute();
+
+    return $stmt->rowCount() > 0;
 }
+
 ?>

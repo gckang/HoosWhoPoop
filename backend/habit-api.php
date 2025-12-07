@@ -7,7 +7,7 @@ ini_set('log_errors', 1);
 
 // --- CORS and HTTP Headers ---
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -41,7 +41,7 @@ try {
             break;
 
         case 'POST':
-            // Handle POST request (Add a new habit for user 1)
+            // Handle POST request
             $data = json_decode(file_get_contents('php://input'));
 
             // Basic validation: Check for 'category' (was 'goal_text' before)
@@ -63,6 +63,37 @@ try {
             ]);
             break;
 
+        case 'DELETE':
+            $data = json_decode(file_get_contents('php://input'));
+            if (!isset($data->habit_id)) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'habit_id is required']);
+                exit();
+            }
+
+            $deleted = deleteHabitForUser($db, $current_user_id, $data->habit_id);
+
+            echo json_encode([
+                'status' => $deleted ? 'success' : 'error',
+                'message' => $deleted ? 'Habit deleted' : 'Habit not found'
+            ]);
+            break;
+
+        case 'PUT':
+            $data = json_decode(file_get_contents('php://input'));
+            if (!isset($data->habit_id) || !isset($data->category)) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'habit_id and category required']);
+                exit();
+            }
+
+            $updated = editHabitForUser($db, $current_user_id, $data->habit_id, trim($data->category));
+
+            echo json_encode([
+                'status' => $updated ? 'success' : 'error',
+                'message' => $updated ? 'Habit updated' : 'Habit not found'
+            ]);
+            break;
 
         default:
             http_response_code(405); // Method Not Allowed

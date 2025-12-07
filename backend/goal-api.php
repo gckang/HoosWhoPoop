@@ -8,7 +8,7 @@ ini_set('log_errors', 1);
 
 // --- CORS and HTTP Headers ---
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, DELETE, PUT, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -54,6 +54,38 @@ try {
                 http_response_code(201);
                 echo json_encode(['status' => 'success', 'goal' => $new_goal]);
             }
+            break;
+
+        case 'PUT':
+            $data = json_decode(file_get_contents('php://input'));
+            if (!isset($data->goal_id) || !isset($data->deadline) || !isset($data->goal_time)) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'gaol_id, deadline, and goal_time required']);
+                exit();
+            }
+
+            $updated = editGoalForUser($db, $current_user_id, $data->goal_id, $data->habit_id, $data->deadline, $data->goal_time);
+
+            echo json_encode([
+                'status' => $updated ? 'success' : 'error',
+                'message' => $updated ? 'Goal updated' : 'Goal not found'
+            ]);
+            break;
+
+        case 'DELETE':
+            $data = json_decode(file_get_contents('php://input'));
+            if (!isset($data->goal_id)) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'goal_id is required']);
+                exit();
+            }
+
+            $deleted = deleteGoalForUser($db, $current_user_id, $data->goal_id);
+
+            echo json_encode([
+                'status' => $deleted ? 'success' : 'error',
+                'message' => $deleted ? 'Goal deleted' : 'Goal not found'
+            ]);
             break;
 
         default:

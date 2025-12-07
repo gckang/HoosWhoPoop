@@ -102,6 +102,24 @@
                 finally { window.location.href = 'login.html'; }
             };
 
+            const computeGoalProgress = useCallback(() => {
+                const map = {};
+
+                events.forEach(ev => {
+                    const start = new Date(`2000-01-01T${ev.start_time}`);
+                    const end = new Date(`2000-01-01T${ev.end_time}`);
+                    const hours = (end - start) / (1000 * 60 * 60);
+
+                    if (!map[ev.goal_id]) map[ev.goal_id] = 0;
+                    map[ev.goal_id] += hours;
+                });
+
+                return map;
+            }, [events]);
+
+            const goalProgress = computeGoalProgress();
+
+
             if (isCheckingAuth) return <LoadingSpinner />;
 
             return (
@@ -118,7 +136,7 @@
                             </div>
 
                             <div className="three-columns">
-                                <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals}/>
+                                <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals} progress={goalProgress}/>
                                 <EventDisplay goals={goals} events={events} setEvents={setEvents} loading={loading.events}/>
                             </div>
 
@@ -289,7 +307,7 @@
             );
         }
 
-        function GoalItem({ goal, habits, onDelete, onEdit }) {
+        function GoalItem({ goal, habits, onDelete, onEdit, progress }) {
             const [isEditing, setIsEditing] = React.useState(false);
 
             const [editHabit, setEditHabit] = React.useState(goal.habit_id);
@@ -322,6 +340,11 @@
                 const habit = habits.find(h => parseInt(h.habit_id) === numericId);
                 return habit ? habit.category : "Unknown";
             };
+
+            const percent = Math.min(
+                Math.round((progress / goal.goal_time) * 100),
+                100
+            )
 
             const [selectedHabit, setSelectedHabit] = useState('');
             const [deadline, setDeadline] = useState('');
@@ -362,9 +385,22 @@
                         </React.Fragment>
                     ) : (
                         <React.Fragment>
-                            <span className="goal-text">
-                                {getHabitName(goal.habit_id)} — {goal.goal_time} hrs by {goal.deadline}
-                            </span>
+                            <div className="goal-info">
+                                <span className="goal-text">
+                                    {getHabitName(goal.habit_id)} — {goal.goal_time} hrs by {goal.deadline}
+                                </span>
+
+                                <div className="progress-container">
+                                    <div
+                                        className="progress-bar"
+                                        style={{ width: percent + "%" }}
+                                    ></div>
+                                </div>
+
+                                <p className="progress-text">
+                                    {progress.toFixed(1)} / {goal.goal_time} hrs
+                                </p>
+                            </div>
 
                             <span className="list-actions">
                                 <i
@@ -382,7 +418,7 @@
             );
         }
 
-        function GoalManager({ goals, habits, loading, setGoals }) {
+        function GoalManager({ goals, habits, loading, setGoals, progress }) {
             const [selectedHabit, setSelectedHabit] = React.useState("");
             const [deadline, setDeadline] = React.useState("");
             const [goalTime, setGoalTime] = React.useState("");
@@ -516,6 +552,7 @@
                                     habits={habits}
                                     onDelete={handleDelete}
                                     onEdit={handleEdit}
+                                    progress={progress[g.goal_id] || 0}
                                 />
                             ))}
                         </ul>

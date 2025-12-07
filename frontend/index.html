@@ -309,6 +309,7 @@
                 const habit = habits.find(h => parseInt(h.habit_id) === numericId);
                 return habit ? habit.category : "Unknown";
             };
+        }
 
         function GoalManager({ goals, habits, loading, setGoals }) {
             const [selectedHabit, setSelectedHabit] = useState('');
@@ -593,7 +594,6 @@
                 </section>
             );
         }
-    }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>

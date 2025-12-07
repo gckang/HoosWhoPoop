@@ -30,19 +30,19 @@
 ////////////////////////////////////////////
 
 /** F25, PHP (on GCP, local XAMPP, or CS server) connect to MySQL (on local XAMPP) **/
-// $username = 'demo';
-// $password = 'demo';
-// $host = 'localhost:3306';
-// $dbname = 'poo';    // voting_system
-// $dsn = "mysql:host=$host;dbname=$dbname";  
+$username = 'demo';
+$password = 'demo';
+$host = 'localhost:3306';
+$dbname = 'poo';    // voting_system
+$dsn = "mysql:host=$host;dbname=$dbname";  
 ////////////////////////////////////////////
 
 /** F25, PHP (on GCP, local XAMPP, or CS server) connect to MySQL (on CS server) **/
-$username = 'kng4jc'; 
-$password = 'Fall2025';
-$host = 'mysql01.cs.virginia.edu';
-$dbname = 'kng4jc';
-$dsn = "mysql:host=$host;dbname=$dbname";
+// $username = 'kng4jc'; 
+// $password = 'Fall2025';
+// $host = 'mysql01.cs.virginia.edu';
+// $dbname = 'kng4jc';
+// $dsn = "mysql:host=$host;dbname=$dbname";
 ////////////////////////////////////////////
 
 // To find a hostname, access phpMyAdmin

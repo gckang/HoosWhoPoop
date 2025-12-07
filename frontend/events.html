@@ -23,6 +23,7 @@
 const { useState, useEffect, useCallback } = React;
 
 const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
+// const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
 const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
 const EVENT_API_URL = `${API_BASE_URL}/event-api.php`;
 const EVENT_FILTER_URL = `${API_BASE_URL}/event-filter.php`;
@@ -104,7 +105,7 @@ function App() {
                         <EventAdder goals={goals} events={events} loading={loading.events} onEventAdded={handleEventAdded} setError={setError}/>
                     </div>
                     <div className="two-columns">
-                        <EventDisplay goals={goals} events={events} loading={loading.events}/>
+                        <EventDisplay goals={goals} events={events} setEvents={setEvents} loading={loading.events}/>
                     </div>
                 </div>
             </div>
@@ -153,59 +154,72 @@ function EventAdder({goals,events,loading,onEventAdded,setError}){
     );
 }
 
-function EventDisplay({goals, events, loading}) {
+function EventDisplay({ goals, events, setEvents, loading }) {
     const [selectedGoal, setSelectedGoal] = useState('');
     const [selectedDate, setSelectedDate] = useState('');
 
     const handleFilter = async (e) => {
         e.preventDefault();
+        console.log("Filter clicked!");
+
         try {
             const response = await fetch(EVENT_FILTER_URL, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: "filter_events", goal_id: parseInt(selectedGoal), day: selectedDate})
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "filter_events",
+                    goal_id: selectedGoal ? parseInt(selectedGoal) : null,
+                    day: selectedDate || null
+                })
             });
+
             const result = await response.json();
-            if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to filter events');
-            setEvents(data.events)
-            setSelectedGoal(''); setSelectedDate('');
-            goals.unshift(result.goal);
+            if (!response.ok || result.status === "error") {
+                throw new Error(result.message || "Failed to filter events");
+            }
+
+            // ✅ Correctly update events
+            setEvents(result.events);
+
         } catch (e) {
-            console.error(e);
+            console.error("Filter error:", e);
         }
     };
 
-    const handleDelete = async(goalID) => {
-                /*TODO: use sql api to delete goal*/
-    }
-
-    const handleEdit = async(goalID) => {
-                /*pop up form or use inline editing like in a todolist (code examples online you can use)*/
-                /*TODO: use sql api to update goal*/
-    }
-    
     return (
         <section>
             <h2>Existing Events:</h2>
+
             <form onSubmit={handleFilter} className="poo-form">
-                <select value={selectedGoal} onChange={e=>setSelectedGoal(e.target.value)} className="poo-select">
-                    <option value="">Select a goal to log time for...</option>
-                    {goals.map(g=><option key={g.goal_id} value={g.goal_id}>{g.category} (by {g.deadline})</option>)}
+                <select value={selectedGoal} onChange={e => setSelectedGoal(e.target.value)} className="poo-select">
+                    <option value="">Filter by goal...</option>
+                    {goals.map(g => (
+                        <option key={g.goal_id} value={g.goal_id}>
+                            {g.category} (by {g.deadline})
+                        </option>
+                    ))}
                 </select>
-                <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)} className="poo-input"/>
+
+                <input type="date"
+                       value={selectedDate}
+                       onChange={e => setSelectedDate(e.target.value)}
+                       className="poo-input"
+                />
+
                 <button type="submit" className="add-button">Filter</button>
             </form>
+
             {loading ? <LoadingSpinner/> : (
                 <ul>
-                    {events.map(ev=>(
+                    {events.map(ev => (
                         <li key={ev.event_id} className="poo-item">
                             {ev.category}: {ev.day} from {ev.start_time} to {ev.end_time}
                             <span className="list-actions">
-                                <button className="icon-button edit-item" onClick={()=>handleEdit(g.goal_id)}> 
-                                    <i className="fa-solid fa-pen edit-icon"></i>
+                                <button onClick={() => handleEdit(ev.event_id)} className="icon-button edit-item">
+                                    <i className="fa-solid fa-pen"></i>
                                 </button>
-                                <button className="icon-button delete-item" onClick={()=>handleDelete(g.goal_id)}> 
-                                    <i className="fa-solid fa-trash delete-icon"></i>
+                                <button onClick={() => handleDelete(ev.event_id)} className="icon-button delete-item">
+                                    <i className="fa-solid fa-trash"></i>
                                 </button>
                             </span>
                         </li>

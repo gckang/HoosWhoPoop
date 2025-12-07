@@ -18,13 +18,14 @@
     <script type="text/babel">
         const { useState, useEffect, useCallback } = React;
 
-        // --- API URLs ---
+        // --- API URLs --- 
         // CHANGE B/W LOCAL AND UVA SERVER
-        //const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
-        const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
+        const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
+        //const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/'
 
         const HABIT_API_URL = `${API_BASE_URL}/habit-api.php`;
         const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
+        const FRIEND_API_URL = `${API_BASE_URL}/friends-api.php`;
         const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
         const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
 
@@ -44,7 +45,8 @@
             const [isCheckingAuth, setIsCheckingAuth] = useState(true);
             const [habits, setHabits] = useState([]);
             const [goals, setGoals] = useState([]);
-            const [loading, setLoading] = useState({ habits: true, goals: true});
+            const [friends, setFriends] = useState([]);
+            const [loading, setLoading] = useState({ habits: true, goals: true, friends: true });
             const [error, setError] = useState(null);
 
             useEffect(() => {
@@ -80,6 +82,7 @@
                 if (user) {
                     fetchData(HABIT_API_URL, 'habits', setHabits);
                     fetchData(GOAL_API_URL, 'goals', setGoals);
+                    fetchData(FRIEND_API_URL, 'friends', setFriends);
                 }
             }, [user, fetchData]);
 
@@ -95,16 +98,26 @@
                     <NavBar user={user} handleLogout={handleLogout}/>
 
                     {error && <ErrorMessage message={error} onClear={() => setError(null)} />}
+
                     <div className="content-container">
                         <div className="main-columns">
                             <div className="three-columns">
-                                <HabitManager habits={habits} loading={loading.habits} />
+                                <HabitManager habits={habits} loading={loading.habits} setHabits={setHabits} />
                             </div>
+
                             <div className="three-columns">
-                                <GoalManager goals={goals} habits={habits} loading={loading.goals} />
+                                <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals} />
                             </div>
+
+                            {/* Right column: Goal on top, Friends directly below (matching font/size) */}
                             <div className="three-columns">
-                                <GoalManager goals={goals} habits={habits} loading={loading.goals} />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals} />
+                                    {/* Use same section styles as other lists and inherit font/size */}
+                                    <div style={{ width: '100%' }}>
+                                        <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -185,7 +198,6 @@
                     const result = await res.json();
                     if (result.status !== 'success') throw new Error(result.message);
 
-                    // Update state
                     setHabits(prev => prev.filter(h => h.habit_id !== habitId));
                     return true;
                 } catch (e) {
@@ -264,8 +276,89 @@
             );
         }
 
+        // Friend item - same style as habit item but no edit button
+        function FriendItem({ friend, onDelete }) {
+            return (
+                <li className="goal-item">
+                    <span className="habit-text">{friend.username || friend.name || friend.display_name}</span>
+                    <span className="list-actions">
+                        <i
+                            className="fa-solid fa-trash delete-icon"
+                            onClick={() => onDelete(friend.friend_id)}
+                        ></i>
+                    </span>
+                </li>
+            );
+        }
 
-        function GoalManager({ goals, habits, loading }) {
+        // Friend manager - styled like habit-section, placed under right goal column
+        function FriendManager({ friends, loading, setFriends }) {
+            const [newFriend, setNewFriend] = useState('');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!newFriend.trim()) return;
+                try {
+                    const response = await fetch(FRIEND_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ friend_id: newFriend })
+                    });
+                    const result = await response.json();
+                    if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add friend');
+
+                    setNewFriend('');
+                    setFriends(prev => [result.friend, ...prev]);
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+
+            const handleDelete = async (friendId) => {
+                try {
+                    const res = await fetch(FRIEND_API_URL, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ friend_id: friendId })
+                    });
+                    const result = await res.json();
+                    if (result.status !== 'success') throw new Error(result.message);
+
+                    setFriends(prev => prev.filter(f => f.friend_id !== friendId));
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+
+            return (
+                <section className="habit-section"> {/* reuse habit-section styles for identical look */}
+                    <h2>Friends</h2>
+                    <form onSubmit={handleSubmit} className="habit-form">
+                        <input
+                            value={newFriend}
+                            onChange={e => setNewFriend(e.target.value)}
+                            placeholder="Add friend (user ID)"
+                            className="habit-input"
+                        />
+                        <button type="submit" className="add-button">Add</button>
+                    </form>
+
+                    {loading ? <div className="spinner"></div> :
+                        <ul className="list">
+                            {friends.map(f => (
+                                <FriendItem
+                                    key={f.friend_id}
+                                    friend={f}
+                                    onDelete={handleDelete}
+                                />
+                            ))}
+                        </ul>
+                    }
+                </section>
+            );
+        }
+
+        function GoalManager({ goals, habits, loading, setGoals }) {
             const [selectedHabit, setSelectedHabit] = useState('');
             const [deadline, setDeadline] = useState('');
             const [goalTime, setGoalTime] = useState('');
@@ -282,7 +375,9 @@
                     const result = await response.json();
                     if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add goal');
                     setSelectedHabit(''); setDeadline(''); setGoalTime('');
-                    goals.unshift(result.goal);
+                    // use setter if provided
+                    if (setGoals) setGoals(prev => [result.goal, ...prev]);
+                    else goals.unshift(result.goal);
                 } catch (e) {
                     console.error(e);
                 }

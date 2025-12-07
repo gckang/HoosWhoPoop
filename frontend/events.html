@@ -25,6 +25,7 @@ const { useState, useEffect, useCallback } = React;
 const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
 const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
 const EVENT_API_URL = `${API_BASE_URL}/event-api.php`;
+const EVENT_FILTER_URL = `${API_BASE_URL}/event-filter.php`;
 const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
 const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
 
@@ -159,13 +160,13 @@ function EventDisplay({goals, events, loading}) {
     const handleFilter = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(GOAL_API_URL, {
+            const response = await fetch(EVENT_FILTER_URL, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({action: "filter_events", goal_id: parseInt(selectedGoal), day: selectedDate})
             });
             const result = await response.json();
-            if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add goal');
+            if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to filter events');
             setEvents(data.events)
             setSelectedGoal(''); setSelectedDate('');
             goals.unshift(result.goal);

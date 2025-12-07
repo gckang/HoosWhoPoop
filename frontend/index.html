@@ -11,6 +11,9 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!--extracted navbar-->
+    <script src="navBar.js"></script>
 </head>
 <body>
     <div id="root"></div>
@@ -21,10 +24,12 @@
         // --- API URLs --- 
         // CHANGE B/W LOCAL AND UVA SERVER
         const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
-        //const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/'
+        //const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
 
         const HABIT_API_URL = `${API_BASE_URL}/habit-api.php`;
         const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
+        const EVENT_API_URL = `${API_BASE_URL}/event-api.php`;
+        const EVENT_FILTER_URL = `${API_BASE_URL}/event-filter.php`;
         const FRIEND_API_URL = `${API_BASE_URL}/friends-api.php`;
         const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
         const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
@@ -45,8 +50,9 @@
             const [isCheckingAuth, setIsCheckingAuth] = useState(true);
             const [habits, setHabits] = useState([]);
             const [goals, setGoals] = useState([]);
+            const [events, setEvents] = useState([]);
             const [friends, setFriends] = useState([]);
-            const [loading, setLoading] = useState({ habits: true, goals: true, friends: true });
+            const [loading, setLoading] = useState({ habits: true, goals: true, friends: true, events: true});
             const [error, setError] = useState(null);
 
             useEffect(() => {
@@ -83,8 +89,13 @@
                     fetchData(HABIT_API_URL, 'habits', setHabits);
                     fetchData(GOAL_API_URL, 'goals', setGoals);
                     fetchData(FRIEND_API_URL, 'friends', setFriends);
+                    fetchData(EVENT_API_URL, 'events', setEvents);
                 }
             }, [user, fetchData]);
+
+            const handleEventAdded = () => {
+                fetchData(EVENT_API_URL, 'events', setEvents);
+            };
 
             const handleLogout = async () => {
                 try { await fetch(LOGOUT_API_URL, { method: 'POST', credentials: 'include' }); }
@@ -95,7 +106,7 @@
 
             return (
                 <div>
-                    <NavBar user={user} handleLogout={handleLogout}/>
+                    {NavBar({user, handleLogout})}
 
                     {error && <ErrorMessage message={error} onClear={() => setError(null)} />}
 
@@ -103,16 +114,18 @@
                         <div className="main-columns">
                             <div className="three-columns">
                                 <HabitManager habits={habits} loading={loading.habits} setHabits={setHabits}/>
+                                <EventAdder goals={goals} onEventAdded={handleEventAdded} setError={setError} />
                             </div>
 
                             <div className="three-columns">
                                 <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals}/>
+                                <EventDisplay goals={goals} events={events} setEvents={setEvents} loading={loading.events}/>
                             </div>
 
                             {/* Right column: Goal on top, Friends directly below (matching font/size) */}
                             <div className="three-columns">
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals} />
+                                    <img src="../media/neutral_poo.PNG" alt="neutral-poo" className="poo"/>
                                     {/* Use same section styles as other lists and inherit font/size */}
                                     <div style={{ width: '100%' }}>
                                         <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
@@ -156,11 +169,11 @@
             };
 
             return (
-                <li className="goal-item">
+                <li className="poo-item">
                     {isEditing ? (
                         <React.Fragment>
                             <input
-                                className="habit-input"
+                                className="poo-input"
                                 value={editValue}
                                 onChange={e => setEditValue(e.target.value)}
                                 autoFocus
@@ -250,12 +263,12 @@
             return (
                 <section className="habit-section">
                     <h2>Habits</h2>
-                    <form onSubmit={handleSubmit} className="habit-form">
+                    <form onSubmit={handleSubmit} className="poo-form">
                         <input
                             value={newHabit}
                             onChange={e => setNewHabit(e.target.value)}
                             placeholder="Add new habit"
-                            className="habit-input"
+                            className="poo-input"
                         />
                         <button type="submit" className="add-button">Add Habit</button>
                     </form>
@@ -315,11 +328,11 @@
             const [goalTime, setGoalTime] = useState('');
 
             return (
-                <li className="goal-item">
+                <li className="poo-item">
                     {isEditing ? (
                         <React.Fragment>
                             <select
-                                className="goal-select"
+                                className="poo-select"
                                 value={editHabit}
                                 onChange={(e) => setEditHabit(e.target.value)}
                             >
@@ -332,14 +345,14 @@
 
                             <input
                                 type="date"
-                                className="goal-input"
+                                className="poo-input"
                                 value={editDeadline}
                                 onChange={(e) => setEditDeadline(e.target.value)}
                             />
 
                             <input
                                 type="number"
-                                className="goal-input"
+                                className="poo-input"
                                 value={editTime}
                                 onChange={(e) => setEditTime(e.target.value)}
                             />
@@ -459,11 +472,11 @@
                     <h2>Goals</h2>
 
                     {/* ADD GOAL */}
-                    <form onSubmit={handleSubmit} className="goal-form">
+                    <form onSubmit={handleSubmit} className="poo-form">
                         <select
                             value={selectedHabit}
                             onChange={(e) => setSelectedHabit(e.target.value)}
-                            className="goal-select"
+                            className="poo-select"
                         >
                             <option value="">Select habit...</option>
                             {habits.map((h) => (
@@ -477,14 +490,14 @@
                             type="date"
                             value={deadline}
                             onChange={(e) => setDeadline(e.target.value)}
-                            className="goal-input"
+                            className="poo-input"
                         />
 
                         <input
                             type="number"
                             value={goalTime}
                             onChange={(e) => setGoalTime(e.target.value)}
-                            className="goal-input"
+                            className="poo-input"
                             placeholder="Hours"
                         />
 
@@ -514,7 +527,7 @@
         // Friend item - same style as habit item but no edit button
         function FriendItem({ friend, onDelete }) {
             return (
-                <li className="goal-item">
+                <li className="poo-item">
                     <span className="habit-text">{friend.username || friend.name || friend.display_name}</span>
                     <span className="list-actions">
                         <i
@@ -568,12 +581,12 @@
             return (
                 <section className="habit-section"> {/* reuse habit-section styles for identical look */}
                     <h2>Friends</h2>
-                    <form onSubmit={handleSubmit} className="habit-form">
+                    <form onSubmit={handleSubmit} className="poo-form">
                         <input
                             value={newFriend}
                             onChange={e => setNewFriend(e.target.value)}
                             placeholder="Add friend (user ID)"
-                            className="habit-input"
+                            className="poo-input"
                         />
                         <button type="submit" className="add-button">Add</button>
                     </form>
@@ -592,6 +605,215 @@
                 </section>
             );
         }
+
+        function EventAdder({goals, onEventAdded, setError}) {
+            const [selectedGoal,setSelectedGoal] = useState('');
+            const [day,setDay] = useState('');
+            const [startTime,setStartTime] = useState('');
+            const [endTime,setEndTime] = useState('');
+
+            const handleSubmit = async e => {
+                e.preventDefault();
+                if(!selectedGoal || !day || !startTime || !endTime){
+                    setError("Please fill out all event fields.");
+                    return;
+                }
+                try{
+                    const res = await fetch(EVENT_API_URL, {
+                        method:'POST',
+                        headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({
+                            action: "post_events",
+                            goal_id: parseInt(selectedGoal),
+                            day,
+                            start_time: startTime,
+                            end_time: endTime
+                        })
+                    });
+                    const data = await res.json();
+                    if(!res.ok || data.status === 'error') 
+                        throw new Error(data.message || 'Failed to add event.');
+                    
+                    onEventAdded();
+                    setSelectedGoal('');
+                    setDay('');
+                    setStartTime('');
+                    setEndTime('');
+                } catch(e) { 
+                    setError(`Failed to add event: ${e.message}`);
+                }
+            };
+
+            return (
+                <section className="habit-section">
+                    <h2>Track Events</h2>
+                    <form onSubmit={handleSubmit} className="poo-form">
+                        <select value={selectedGoal} onChange={e=>setSelectedGoal(e.target.value)} className="poo-select">
+                            <option value="">Select a goal to log time for...</option>
+                            {goals.map(g => (
+                                <option key={g.goal_id} value={g.goal_id}>
+                                    {g.category} (by {g.deadline})
+                                </option>
+                            ))}
+                        </select>
+
+                        <input type="date" value={day} onChange={e=>setDay(e.target.value)} className="poo-input"/>
+
+                        <div className="flex space-x-2">
+                            <input type="time" value={startTime} onChange={e=>setStartTime(e.target.value)} className="poo-input"/>
+                            <input type="time" value={endTime} onChange={e=>setEndTime(e.target.value)} className="poo-input"/>
+                        </div>
+
+                        <button type="submit" className="add-button">Add Event</button>
+                    </form>
+                </section>
+            );
+        }
+
+        function EventDisplay({goals, events, setEvents, loading}) {
+            const [selectedGoal, setSelectedGoal] = useState('');
+            const [selectedDate, setSelectedDate] = useState('');
+            const [editingEventId, setEditingEventId] = useState(null);
+            const [editData, setEditData] = useState({ start_time: '', end_time: '', day: '', goal_id: '' });
+
+            //console.log("Events loaded:", events);
+            
+            const handleFilter = async (e) => {
+                e.preventDefault();
+                try {
+                    const response = await fetch(EVENT_FILTER_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: "filter_events",
+                            goal_id: selectedGoal ? parseInt(selectedGoal) : null,
+                            day: selectedDate || null
+                        })
+                    });
+
+                    const result = await response.json();
+                    if(!response.ok || result.status === "error") throw new Error(result.message);
+
+                    setEvents(result.events);
+
+                } catch(e) {
+                    console.error(e);
+                }
+            };
+
+            const startEdit = (event) => {
+                setEditingEventId(event.event_id);
+                setEditData({
+                    event_id: event.event_id,
+                    start_time: event.start_time,
+                    end_time: event.end_time,
+                    day: event.day,
+                    goal_id: event.goal_id
+                });
+            };
+
+            const cancelEdit = () => {
+                setEditingEventId(null);
+                setEditData({ event_id: '', start_time: '', end_time: '', day: '', goal_id: '' });
+            };
+
+            const saveEdit = async (eventId) => {
+                const goalIdInt = parseInt(editData.goal_id);
+
+                try {
+                    const res = await fetch(EVENT_API_URL, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ 
+                            event_id: eventId,
+                            start_time: editData.start_time,
+                            end_time: editData.end_time,
+                            day: editData.day,
+                            goal_id: goalIdInt
+                        })
+                    });
+                    const result = await res.json();
+                    if(result.status !== 'success') throw new Error(result.message);
+
+                    setEvents(prev => prev.map(ev => ev.event_id === eventId ? { ...ev, ...editData } : ev));
+                    cancelEdit();
+                } catch(e) {
+                    console.error(e);
+                }
+            };
+
+            const deleteEvent = async (eventId) => {
+                //console.log("Deleting event:", eventId);
+                try {
+                    const res = await fetch(EVENT_API_URL, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ event_id: eventId })
+                    });
+                    const result = await res.json();
+                    if(result.status !== 'success') throw new Error(result.message);
+
+                    setEvents(prev => prev.filter(ev => ev.event_id !== eventId));
+                } catch(e) {
+                    console.error(e);
+                }
+            };
+
+            return (
+                <section className="goal-section">
+                    <h2>Existing Events</h2>
+
+                    <form onSubmit={handleFilter} className="poo-form">
+                        <select value={selectedGoal} onChange={e => setSelectedGoal(e.target.value)} className="poo-select">
+                            <option value="">Filter by goal...</option>
+                            {goals.map(g => (
+                                <option key={g.goal_id} value={g.goal_id}>
+                                    {g.category} (by {g.deadline})
+                                </option>
+                            ))}
+                        </select>
+
+                        <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="poo-input"/>
+                        <button type="submit" className="add-button">Filter</button>
+                    </form>
+
+                    {loading ? <LoadingSpinner/> : (
+                        <ul className="list">
+                            {events.map(ev => (
+                                <li key={ev.event_id} className="poo-item">
+                                    {editingEventId === ev.event_id ? (
+                                        <div className="edit-event">
+                                            <select value={editData.goal_id} onChange={e => setEditData({...editData, goal_id: e.target.value})}>
+                                                {goals.map(g => (
+                                                    <option key={g.goal_id} value={g.goal_id}>
+                                                        {g.category} (by {g.deadline})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <input type="date" value={editData.day} onChange={e => setEditData({...editData, day: e.target.value})}/>
+                                            <input type="time" value={editData.start_time} onChange={e => setEditData({...editData, start_time: e.target.value})}/>
+                                            <input type="time" value={editData.end_time} onChange={e => setEditData({...editData, end_time: e.target.value})}/>
+                                            <button onClick={() => saveEdit(ev.event_id)} className="icon-button">✔</button>
+                                            <button onClick={cancelEdit} className="icon-button">✖</button>
+                                        </div>
+                                    ) : (
+                                        <React.Fragment>
+                                            {ev.category}: {ev.day} from {ev.start_time} to {ev.end_time}
+                                            <span className="list-actions">
+                                                <i className="fa-solid fa-pen edit-icon" onClick={() => startEdit(ev)}></i>
+                                                <i className="fa-solid fa-trash delete-icon" onClick={() => deleteEvent(ev.event_id)}></i>
+                                            </span>
+                                        </React.Fragment>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            );
+        }
+
+
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>

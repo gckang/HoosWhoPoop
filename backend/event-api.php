@@ -8,7 +8,7 @@ ini_set('log_errors', 1);
 
 // --- CORS and HTTP Headers ---
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -55,6 +55,37 @@ try {
                 echo json_encode(['status' => 'success', 'event' => $new_event]);
             }
             break;
+        
+        case 'PUT':
+            $data = json_decode(file_get_contents('php://input'));
+            if(!isset($data->event_id) || !isset($data->goal_id) || !isset($data->day) || !isset($data->start_time) || !isset($data->end_time)){
+                http_response_code(400);
+                echo json_encode(['status'=>'error','message'=>'Missing required fields']);
+                exit;
+            }
+                $updated = editEventForUser(
+                    $db,
+                    $current_user_id,
+                    $data->event_id,
+                    $data->goal_id,
+                    $data->day,
+                    $data->start_time,
+                    $data->end_time
+                );
+            echo json_encode(['status'=>$updated?'success':'error','message'=>$updated?'Event updated':'Event not found']);
+            break;
+
+        case 'DELETE':
+            $data = json_decode(file_get_contents('php://input'));
+            if (!$data || !isset($data->event_id)) {
+                http_response_code(400);
+                echo json_encode(['status'=>'error','message'=>'event_id required']);
+                exit;
+            }
+            $deleted = deleteEventForUser($db, $current_user_id, $data->event_id);
+            echo json_encode(['status'=>$deleted?'success':'error','message'=>$deleted?'Event deleted':'Event not found']);
+            break;
+
 
         default:
             http_response_code(405);

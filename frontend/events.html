@@ -1,18 +1,22 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hoos Who Poop - Events</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Hoos Who Poop</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <style>
-        .spinner { border: 4px solid rgba(0,0,0,.1); border-left-color:#3b82f6; border-radius:50%; width:24px; height:24px; animation: spin 1s linear infinite;}
-        @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
+
+    <!--extracted navbar-->
+    <script src="navBar.js"></script>
 </head>
-<body class="bg-gray-100 font-sans antialiased">
+
+<body>
 <div id="root"></div>
 
 <script type="text/babel">
@@ -20,10 +24,10 @@ const { useState, useEffect, useCallback } = React;
 
 // CHANGE IF ON LOCAL HOST
 const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
-//const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/auth/login-api.php'
-
+// const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
 const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
 const EVENT_API_URL = `${API_BASE_URL}/event-api.php`;
+const EVENT_FILTER_URL = `${API_BASE_URL}/event-filter.php`;
 const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
 const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
 
@@ -31,13 +35,14 @@ const LoadingSpinner = () => (
     <div className="flex justify-center items-center h-24"><div className="spinner"></div></div>
 );
 
-const ErrorMessage = ({ message, onClear }) => (
-    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
-        <strong className="font-bold">Error: </strong>
-        <span className="block sm:inline">{message}</span>
-        <span className="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onClick={onClear}>✖</span>
-    </div>
-);
+// const ErrorMessage = ({ message, onClear }) => (
+//     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+//         <strong className="font-bold">Error: </strong>
+//         <span className="block sm:inline">{message}</span>
+//         <span className="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onClick={onClear}>✖</span>
+//     </div>
+// );
+//use {error && <ErrorMessage message={error} onClear={()=>setError(null)} />} to display
 
 function App() {
     const [user, setUser] = useState(null);
@@ -92,29 +97,25 @@ function App() {
     if(isCheckingAuth) return <div className="flex items-center justify-center min-h-screen"><LoadingSpinner/></div>;
 
     return (
-        <div className="container mx-auto p-4 max-w-4xl">
-            <header className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-blue-600">HoosWhoPoop - Events</h1>
-                <div className="flex justify-between items-center mt-2">
-                    <span/>
-                    <p className="text-lg text-gray-700 mt-2">
-                        Hello pooper, <span className="font-mono bg-blue-100 px-2 py-1 rounded">{user.username}</span>
-                    </p>
-                    <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition text-sm">Logout</button>
+        <div className="">
+            {NavBar({user, handleLogout})}
+
+            <div className="content-container">
+                <div className="main-columns">
+                    <div className="two-columns">
+                        <EventAdder goals={goals} events={events} loading={loading.events} onEventAdded={handleEventAdded} setError={setError}/>
+                    </div>
+                    <div className="two-columns">
+                        <EventDisplay goals={goals} events={events} setEvents={setEvents} loading={loading.events}/>
+                    </div>
                 </div>
-            </header>
-
-            {error && <ErrorMessage message={error} onClear={()=>setError(null)} />}
-
-            <div className="space-y-8">
-                <EventManager goals={goals} events={events} loading={loading.events} onEventAdded={handleEventAdded} setError={setError}/>
             </div>
         </div>
     );
 }
 
 // --- EventManager ---
-function EventManager({goals,events,loading,onEventAdded,setError}){
+function EventAdder({goals,events,loading,onEventAdded,setError}){
     const [selectedGoal,setSelectedGoal] = useState('');
     const [day,setDay] = useState('');
     const [startTime,setStartTime] = useState('');
@@ -124,7 +125,10 @@ function EventManager({goals,events,loading,onEventAdded,setError}){
         e.preventDefault();
         if(!selectedGoal || !day || !startTime || !endTime){ setError("Please fill out all event fields."); return;}
         try{
-            const res = await fetch(EVENT_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal_id:parseInt(selectedGoal),day,start_time:startTime,end_time:endTime})});
+            const res = await fetch(EVENT_API_URL, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({action: "post_events", goal_id:parseInt(selectedGoal), day, start_time:startTime, end_time:endTime})});
             const data = await res.json();
             if(!res.ok || data.status==='error') throw new Error(data.message||'Failed to add event.');
             onEventAdded();
@@ -133,27 +137,92 @@ function EventManager({goals,events,loading,onEventAdded,setError}){
     };
 
     return (
-        <section className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Track Events</h2>
-            <form onSubmit={handleSubmit} className="space-y-4 mb-4">
-                <select value={selectedGoal} onChange={e=>setSelectedGoal(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md">
+        <section>
+            <h2 >Track Events</h2>
+            <form onSubmit={handleSubmit} className="poo-form">
+                <select value={selectedGoal} onChange={e=>setSelectedGoal(e.target.value)} className="poo-select">
                     <option value="">Select a goal to log time for...</option>
                     {goals.map(g=><option key={g.goal_id} value={g.goal_id}>{g.category} (by {g.deadline})</option>)}
                 </select>
-                <input type="date" value={day} onChange={e=>setDay(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md"/>
+                <input type="date" value={day} onChange={e=>setDay(e.target.value)} className="poo-input"/>
                 <div className="flex space-x-2">
-                    <input type="time" value={startTime} onChange={e=>setStartTime(e.target.value)} className="w-1/2 p-2 border border-gray-300 rounded-md"/>
-                    <input type="time" value={endTime} onChange={e=>setEndTime(e.target.value)} className="w-1/2 p-2 border border-gray-300 rounded-md"/>
+                    <input type="time" value={startTime} onChange={e=>setStartTime(e.target.value)} className="poo-input"/>
+                    <input type="time" value={endTime} onChange={e=>setEndTime(e.target.value)} className="poo-input"/>
                 </div>
-                <button type="submit" className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition">Add Event</button>
+                <button type="submit" className="add-button">Add Event</button>
+            </form>
+        </section>
+    );
+}
+
+function EventDisplay({ goals, events, setEvents, loading }) {
+    const [selectedGoal, setSelectedGoal] = useState('');
+    const [selectedDate, setSelectedDate] = useState('');
+
+    const handleFilter = async (e) => {
+        e.preventDefault();
+        console.log("Filter clicked!");
+
+        try {
+            const response = await fetch(EVENT_FILTER_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "filter_events",
+                    goal_id: selectedGoal ? parseInt(selectedGoal) : null,
+                    day: selectedDate || null
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok || result.status === "error") {
+                throw new Error(result.message || "Failed to filter events");
+            }
+
+            // ✅ Correctly update events
+            setEvents(result.events);
+
+        } catch (e) {
+            console.error("Filter error:", e);
+        }
+    };
+
+    return (
+        <section>
+            <h2>Existing Events:</h2>
+
+            <form onSubmit={handleFilter} className="poo-form">
+                <select value={selectedGoal} onChange={e => setSelectedGoal(e.target.value)} className="poo-select">
+                    <option value="">Filter by goal...</option>
+                    {goals.map(g => (
+                        <option key={g.goal_id} value={g.goal_id}>
+                            {g.category} (by {g.deadline})
+                        </option>
+                    ))}
+                </select>
+
+                <input type="date"
+                       value={selectedDate}
+                       onChange={e => setSelectedDate(e.target.value)}
+                       className="poo-input"
+                />
+
+                <button type="submit" className="add-button">Filter</button>
             </form>
 
-            <h3 className="text-lg font-medium mb-2">Existing Events:</h3>
             {loading ? <LoadingSpinner/> : (
-                <ul className="list-disc list-inside h-64 overflow-y-auto bg-gray-50 p-2 rounded-md">
-                    {events.map(ev=>(
-                        <li key={ev.event_id} className="text-gray-700">
+                <ul>
+                    {events.map(ev => (
+                        <li key={ev.event_id} className="poo-item">
                             {ev.category}: {ev.day} from {ev.start_time} to {ev.end_time}
+                            <span className="list-actions">
+                                <button onClick={() => handleEdit(ev.event_id)} className="icon-button edit-item">
+                                    <i className="fa-solid fa-pen"></i>
+                                </button>
+                                <button onClick={() => handleDelete(ev.event_id)} className="icon-button delete-item">
+                                    <i className="fa-solid fa-trash"></i>
+                                </button>
+                            </span>
                         </li>
                     ))}
                 </ul>

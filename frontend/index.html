@@ -862,18 +862,31 @@
 
         function PooSprite({ percent }) {
             let pooImage = "";
+            let caption = "";
 
-            if (percent < 25) pooImage = "../media/miserable_poo.png";
-            else if (percent < 50) pooImage = "../media/sad_poo.png";
-            else if (percent < 75) pooImage = "../media/neutral_poo.png";
-            else pooImage = "../media/happy_poo.png";
+            if (percent < 25) {
+                pooImage = "../media/miserable_poo.png";
+                caption = "direrhea";
+            } else if (percent < 50) {
+                pooImage = "../media/sad_poo.png";
+                caption = "bad bowels";
+            } else if (percent < 75) {
+                pooImage = "../media/neutral_poo.png";
+                caption = "ok bowels";
+            } else {
+                pooImage = "../media/happy_poo.png";
+                caption = "healthy bowels!!";
+            }
 
             return (
-                <img 
-                    src={pooImage}
-                    alt="Poo Sprite"
-                    className="poo-sprite"
-                />
+                <div style={{ textAlign: "center" }}>
+                    <img 
+                        src={pooImage}
+                        alt="Poo Sprite"
+                        className="poo-sprite"
+                    />
+                    <div className="sprite-caption">{caption}</div>
+                </div>
             );
         }
 

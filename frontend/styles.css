@@ -125,13 +125,6 @@ section {
     min-height: 50%;
 }
 
-.poo {
-    width: 90%;
-    max-width: 350px;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
-}
-
 /* Forms */
 .poo-form { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .poo-input, .poo-select { padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; flex-grow: 1; }
@@ -192,9 +185,17 @@ section {
 }
 
 .poo-sprite {
-    width: 180px;
-    height: auto;
     transition: opacity 0.4s ease;
+    width: 90%;
+    max-width: 350px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.sprite-caption {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: #555;
 }
 
 

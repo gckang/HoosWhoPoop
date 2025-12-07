@@ -119,6 +119,13 @@ section {
     min-height: 50%;
 }
 
+.poo {
+    width: 90%;
+    max-width: 350px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
 /* Forms */
 .habit-form, .goal-form { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .habit-input, .goal-input, .goal-select { padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; flex-grow: 1; }

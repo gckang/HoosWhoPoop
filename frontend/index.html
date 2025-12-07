@@ -159,7 +159,7 @@
             };
 
             return (
-                <li className="goal-item">
+                <li className="poo-item">
                     {isEditing ? (
                         <React.Fragment>
                             <input
@@ -253,7 +253,7 @@
             return (
                 <section className="habit-section">
                     <h2>Habits</h2>
-                    <form onSubmit={handleSubmit} className="habit-form">
+                    <form onSubmit={handleSubmit} className="poo-form">
                         <input
                             value={newHabit}
                             onChange={e => setNewHabit(e.target.value)}
@@ -318,7 +318,7 @@
             const [goalTime, setGoalTime] = useState('');
 
             return (
-                <li className="goal-item">
+                <li className="poo-item">
                     {isEditing ? (
                         <React.Fragment>
                             <select
@@ -462,7 +462,7 @@
                     <h2>Goals</h2>
 
                     {/* ADD GOAL */}
-                    <form onSubmit={handleSubmit} className="goal-form">
+                    <form onSubmit={handleSubmit} className="poo-form">
                         <select
                             value={selectedHabit}
                             onChange={(e) => setSelectedHabit(e.target.value)}
@@ -517,7 +517,7 @@
         // Friend item - same style as habit item but no edit button
         function FriendItem({ friend, onDelete }) {
             return (
-                <li className="goal-item">
+                <li className="poo-item">
                     <span className="habit-text">{friend.username || friend.name || friend.display_name}</span>
                     <span className="list-actions">
                         <i
@@ -571,7 +571,7 @@
             return (
                 <section className="habit-section"> {/* reuse habit-section styles for identical look */}
                     <h2>Friends</h2>
-                    <form onSubmit={handleSubmit} className="habit-form">
+                    <form onSubmit={handleSubmit} className="poo-form">
                         <input
                             value={newFriend}
                             onChange={e => setNewFriend(e.target.value)}

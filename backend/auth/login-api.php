@@ -23,11 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 // --- Global Try/Catch Block ---
 try {
-    if (!file_exists(dirname(__DIR__) . '/connect-db.php')) {
-        die("FATAL: connect-db.php was not found! Path check failed.");
-    }
-    require('../connect-db.php');  // Provides $db
-    require('login-sql.php');     // Provides auth functions
+    require(__DIR__ .'/../connect-db.php');  // Provides $db
+    require(__DIR__ .'/login-sql.php');     // Provides auth functions
 
     $method = $_SERVER['REQUEST_METHOD'];
 

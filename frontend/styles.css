@@ -191,6 +191,12 @@ section {
     flex: 1;  /* ensures it fills space before the icons */
 }
 
+.poo-sprite {
+    width: 180px;
+    height: auto;
+    transition: opacity 0.4s ease;
+}
+
 
 /* ------------------------------
    General Body

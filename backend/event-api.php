@@ -39,21 +39,37 @@ try {
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'));
-            if (empty($data) || !isset($data->goal_id) || !isset($data->day) || !isset($data->start_time) || !isset($data->end_time)) {
-                http_response_code(400);
-                echo json_encode(['status' => 'error', 'message' => 'Missing fields: goal_id, day, start_time, end_time.']);
-            } else {
-                $new_event = addEventForUser(
-                    $db, 
-                    $current_user_id, 
-                    $data->goal_id,
-                    $data->day,
-                    $data->start_time,
-                    $data->end_time
-                );
-                http_response_code(201);
-                echo json_encode(['status' => 'success', 'event' => $new_event]);
-            }
+            // $action = $data["action"]; //?? "" if none (not possible)
+            // error_log("EVENT POST DATA: " . file_get_contents('php://input'));
+            // echo json_encode($action);
+            // if($action === "filter_events") {
+            //     $goal_id = $data["goal_id"] ?? null;
+            //     $day = $data["day"] ?? null;
+
+            //     $events = filterEvents($db, $user_id, $goal_id, $day);
+
+            //     echo json_encode([
+            //         "status" => "success",
+            //         "events" => $events
+            //     ]);
+            // } 
+            //if ($action === "post_events") {
+                if (empty($data) || !isset($data->goal_id) || !isset($data->day) || !isset($data->start_time) || !isset($data->end_time)) {
+                    http_response_code(400);
+                    echo json_encode(['status' => 'error', 'message' => 'Missing fields: goal_id, day, start_time, end_time.']);
+                } else {
+                    $new_event = addEventForUser(
+                        $db, 
+                        $current_user_id, 
+                        $data->goal_id,
+                        $data->day,
+                        $data->start_time,
+                        $data->end_time
+                    );
+                    http_response_code(201);
+                    echo json_encode(['status' => 'success', 'event' => $new_event]);
+                }
+            //}
             break;
 
         default:

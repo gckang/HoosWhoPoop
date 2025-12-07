@@ -79,6 +79,7 @@ try
 {
 //  $db = new PDO("mysql:host=$hostname;dbname=db-demo", $username, $password);
    $db = new PDO($dsn, $username, $password);
+   error_log("connect-db file was loaded successfully");
    
    // dispaly a message to let us know that we are connected to the database 
    // echo "<p>You are connected to the database -- host=$host</p>";

@@ -66,6 +66,9 @@ try {
     // --- GLOBAL ERROR HANDLER ---
     ob_clean();
     $code = $e->getCode();
+    if (is_string($code) || $code < 100 || $code > 599) { 
+        $code = 500; // Default to 500 if it's a string (SQLSTATE) or out of range
+    }
     if ($code < 100 || $code > 599) { $code = 500; }
     http_response_code($code);
     echo json_encode([

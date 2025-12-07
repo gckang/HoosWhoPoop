@@ -163,7 +163,7 @@
                     {isEditing ? (
                         <React.Fragment>
                             <input
-                                className="habit-input"
+                                className="poo-input"
                                 value={editValue}
                                 onChange={e => setEditValue(e.target.value)}
                                 autoFocus
@@ -258,7 +258,7 @@
                             value={newHabit}
                             onChange={e => setNewHabit(e.target.value)}
                             placeholder="Add new habit"
-                            className="habit-input"
+                            className="poo-input"
                         />
                         <button type="submit" className="add-button">Add Habit</button>
                     </form>
@@ -322,7 +322,7 @@
                     {isEditing ? (
                         <React.Fragment>
                             <select
-                                className="goal-select"
+                                className="poo-select"
                                 value={editHabit}
                                 onChange={(e) => setEditHabit(e.target.value)}
                             >
@@ -335,14 +335,14 @@
 
                             <input
                                 type="date"
-                                className="goal-input"
+                                className="poo-input"
                                 value={editDeadline}
                                 onChange={(e) => setEditDeadline(e.target.value)}
                             />
 
                             <input
                                 type="number"
-                                className="goal-input"
+                                className="poo-input"
                                 value={editTime}
                                 onChange={(e) => setEditTime(e.target.value)}
                             />
@@ -466,7 +466,7 @@
                         <select
                             value={selectedHabit}
                             onChange={(e) => setSelectedHabit(e.target.value)}
-                            className="goal-select"
+                            className="poo-select"
                         >
                             <option value="">Select habit...</option>
                             {habits.map((h) => (
@@ -480,14 +480,14 @@
                             type="date"
                             value={deadline}
                             onChange={(e) => setDeadline(e.target.value)}
-                            className="goal-input"
+                            className="poo-input"
                         />
 
                         <input
                             type="number"
                             value={goalTime}
                             onChange={(e) => setGoalTime(e.target.value)}
-                            className="goal-input"
+                            className="poo-input"
                             placeholder="Hours"
                         />
 
@@ -576,7 +576,7 @@
                             value={newFriend}
                             onChange={e => setNewFriend(e.target.value)}
                             placeholder="Add friend (user ID)"
-                            className="habit-input"
+                            className="poo-input"
                         />
                         <button type="submit" className="add-button">Add</button>
                     </form>

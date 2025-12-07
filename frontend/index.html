@@ -119,6 +119,16 @@
 
             const goalProgress = computeGoalProgress();
 
+            const averagePercent = React.useMemo(() => {
+                if (!goals.length) return 0;
+                let totalPercent = 0;
+                goals.forEach(goal => {
+                    const prog = goalProgress[goal.goal_id] || 0;
+                    totalPercent += Math.min(100, (prog / goal.goal_time) * 100);
+                });
+                return totalPercent / goals.length;
+            }, [goals, goalProgress]);
+
 
             if (isCheckingAuth) return <LoadingSpinner />;
 
@@ -143,7 +153,7 @@
                             {/* Right column: Goal on top, Friends directly below (matching font/size) */}
                             <div className="three-columns">
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <img src="../media/neutral_poo.PNG" alt="neutral-poo" className="poo"/>
+                                    <PooSprite percent={averagePercent} />
                                     {/* Use same section styles as other lists and inherit font/size */}
                                     <div style={{ width: '100%' }}>
                                         <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
@@ -849,6 +859,37 @@
                 </section>
             );
         }
+
+        function PooSprite({ percent }) {
+            let pooImage = "";
+            let caption = "";
+
+            if (percent < 25) {
+                pooImage = "../media/miserable_poo.png";
+                caption = "direrhea";
+            } else if (percent < 50) {
+                pooImage = "../media/sad_poo.png";
+                caption = "bad bowels";
+            } else if (percent < 75) {
+                pooImage = "../media/neutral_poo.png";
+                caption = "ok bowels";
+            } else {
+                pooImage = "../media/happy_poo.png";
+                caption = "healthy bowels!!";
+            }
+
+            return (
+                <div style={{ textAlign: "center" }}>
+                    <img 
+                        src={pooImage}
+                        alt="Poo Sprite"
+                        className="poo-sprite"
+                    />
+                    <div className="sprite-caption">{caption}</div>
+                </div>
+            );
+        }
+
 
 
 

@@ -166,7 +166,8 @@ function EventDisplay({goals, events, loading}) {
             });
             const result = await response.json();
             if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add goal');
-            setSelectedHabit(''); setDeadline(''); setGoalTime('');
+            setEvents(data.events)
+            setSelectedGoal(''); setSelectedDate('');
             goals.unshift(result.goal);
         } catch (e) {
             console.error(e);

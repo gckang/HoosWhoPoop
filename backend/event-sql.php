@@ -70,4 +70,33 @@ function addEventForUser($db, $user_id, $goal_id, $day, $start_time, $end_time)
         'goal_id' => $goal_id
     ];
 }
+
+function filterEvents($db, $user_id, $goal_id, $day) {
+    $sql = "SELECT e.event_id, e.goal_id, e.day, e.start_time, e.end_time,
+                   h.category
+            FROM event e
+            JOIN goal g ON e.user_id = g.user_id AND e.goal_id = g.goal_id
+            JOIN habit h ON g.user_id = h.user_id AND g.habit_id = h.habit_id
+            WHERE e.user_id = :uid";
+
+    $params = [":uid" => $user_id];
+
+    if (!empty($goal_id)) {
+        $sql .= " AND e.goal_id = :gid";
+        $params[":gid"] = $goal_id;
+    }
+
+    if (!empty($day)) {
+        $sql .= " AND e.day = :day";
+        $params[":day"] = $day;
+    }
+
+    $sql .= " ORDER BY e.day DESC, e.start_time ASC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 ?>

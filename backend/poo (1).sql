@@ -455,6 +455,7 @@ ALTER TABLE `useraccount`
 ALTER TABLE `useraccount`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 COMMIT;
+
 -- =========================================
 -- ROLES
 -- =========================================
@@ -517,12 +518,6 @@ TO app_role;
 GRANT SELECT, INSERT 
 ON `poo`.`event` 
 TO app_role;
-
--- Remove advanced permissions from app role
-REVOKE ALTER, DROP, CREATE, INDEX 
-ON `poo`.*
-FROM app_role;
-
 
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

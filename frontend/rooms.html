@@ -204,7 +204,7 @@ function RoomItem({ room, onDelete, onSelect, isOwner }) {
     return (
         <li 
             className="poo-item"
-            onClick={() => onSelect({ room_id: room.room_id, owner_id: room.owner_id })}
+            onClick={() => onSelect({ room_id: room.room_id })}
             style={{ cursor: "pointer" }}
         >
             <span>Room #{room.room_id}</span>
@@ -228,28 +228,20 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
     const [selectedFriends, setSelectedFriends] = useState([]);
 
     const handleDelete = async (roomObj) => {
-        const { room_id, owner_id } = roomObj;
+        const { room_id } = roomObj;
         try {
             const res = await fetch(ROOM_API_URL, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ room_id, owner_id })
+                body: JSON.stringify({ room_id })
             });
 
             const result = await res.json();
             if (result.status !== 'success') throw new Error(result.message);
 
-            setRooms(prev =>
-                prev.filter(r =>
-                    !(r.room_id === room_id && r.owner_id === owner_id)
-                )
-            );
+            setRooms(prev => prev.filter(r => r.room_id !== room_id));
 
-            if (
-                selectedRoom &&
-                selectedRoom.room_id === room_id &&
-                selectedRoom.owner_id === owner_id
-            ) {
+            if (selectedRoom && selectedRoom.room_id === room_id) {
                 setSelectedRoom(null);
             }
 
@@ -258,13 +250,12 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
         }
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
             const payload = {
-                owner_id: user.user_id
+                owner_id: user.user_id // still include owner_id for DB insertion
             };
 
             const response = await fetch(ROOM_API_URL, {
@@ -279,6 +270,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                 throw new Error(result.message);
             }
 
+            // Add new room to state
             setRooms(prev => [...prev, result.room]);
 
         } catch (error) {
@@ -298,22 +290,17 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                 credentials: "include",
                 body: JSON.stringify({
                     room_id: selectedRoom.room_id,
-                    owner_id: selectedRoom.owner_id,
                     user_ids: selectedFriends
                 })
-
             });
 
             const result = await response.json();
-            if (!response.ok || result.status === "error") {
-                throw new Error(result.message);
-            }
-
+            if (!response.ok || result.status === "error") throw new Error(result.message);
 
             setSelectedFriends([]);
             const currentRoom = selectedRoom;
-            setSelectedRoom(null);       // temporarily deselect
-            setTimeout(() => setSelectedRoom(currentRoom), 10); // switch back
+            setSelectedRoom(null);
+            setTimeout(() => setSelectedRoom(currentRoom), 10);
 
         } catch (e) {
             console.error("Invite error:", e);
@@ -337,7 +324,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                     <ul className="list">
                         {rooms.map(room => (
                             <RoomItem 
-                                key={`${room.room_id}-${room.owner_id}`}
+                                key={room.room_id}
                                 room={room}
                                 onDelete={handleDelete}
                                 onSelect={setSelectedRoom}
@@ -386,25 +373,28 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
 }
 
 function Leaderboard({ selectedRoom }) {
-    const [leaderboard, setLeaderboard] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [leaderboard, setLeaderboard] = React.useState([]);
+    const [loading, setLoading] = React.useState(false);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (!selectedRoom) return;
 
         const fetchLeaderboard = async () => {
-            setLoading(true);
             try {
-                const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom.room_id}&owner_id=${selectedRoom.owner_id}`)
+                setLoading(true);
+                const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom.room_id}`);
                 const data = await res.json();
                 setLeaderboard(data);
             } catch (e) {
                 console.error("Error fetching leaderboard:", e);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         fetchLeaderboard();
+        const interval = setInterval(fetchLeaderboard, 5000);
+        return () => clearInterval(interval);
     }, [selectedRoom]);
 
     return (
@@ -417,16 +407,15 @@ function Leaderboard({ selectedRoom }) {
 
             {!loading && selectedRoom && (
                 <ul className="list">
-                    {leaderboard
-                        .map((member, index) => (
-                            <li key={member.user_id} className="leaderboard-item">
-                                <span className="rank-number">{index + 1}.</span>
-                                <span className="rank-username">{member.username}</span>
-                                {member.is_owner == 1 && (
-                                    <i className="fa-solid fa-crown owner-icon"></i>
-                                )}
-                            </li>
-                        ))}
+                    {leaderboard.map((member, index) => (
+                        <li key={member.user_id} className="leaderboard-item">
+                            <span className="rank-number">{index + 1}.</span>
+                            <span className="rank-username">{member.username}</span>
+                            {member.is_owner === 1 && (
+                                <i className="fa-solid fa-crown owner-icon" title="Room Owner"></i>
+                            )}
+                        </li>
+                    ))}
                 </ul>
             )}
         </section>

@@ -7,31 +7,24 @@
 function createRoom($db, int $ownerId)
 {
     try {
-        // Get max room_id for this user
-        $stmt = $db->prepare("SELECT MAX(room_id) as max_room FROM room WHERE owner_id = :owner");
-        $stmt->execute([':owner' => $ownerId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $nextRoomId = ($row && $row['max_room'] !== null) ? intval($row['max_room']) + 1 : 1;
-
-        // Insert into room table
-        $sql = "INSERT INTO room (room_id, owner_id) VALUES (:room, :owner)";
+        // Insert room, let room_id auto-increment
+        $sql = "INSERT INTO room (owner_id) VALUES (:owner)";
         $stmt = $db->prepare($sql);
-        $stmt->execute([
-            ':room' => $nextRoomId,
-            ':owner' => $ownerId
-        ]);
+        $stmt->execute([':owner' => $ownerId]);
+
+        $roomId = intval($db->lastInsertId());
 
         // Insert owner into roomjoin
         $sql2 = "INSERT INTO roomjoin (room_id, user_id, user_rank)
                  VALUES (:room, :owner, 0)";
         $stmt2 = $db->prepare($sql2);
         $stmt2->execute([
-            ':room' => $nextRoomId,
+            ':room' => $roomId,
             ':owner' => $ownerId
         ]);
 
         return [
-            'room_id' => $nextRoomId,
+            'room_id' => $roomId,
             'owner_id' => $ownerId
         ];
 
@@ -68,28 +61,18 @@ function getAllUserRooms(PDO $db, int $userId): array
  */
 function deleteRoom(PDO $db, int $userId, int $roomId): bool
 {
-    // Verify user is owner
     $stmt = $db->prepare("SELECT owner_id FROM room WHERE room_id = :rid");
     $stmt->execute([':rid' => $roomId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$row || intval($row['owner_id']) !== $userId) {
-        return false;
-    }
+    if (!$row || intval($row['owner_id']) !== $userId) return false;
 
-    // Delete room & members
     try {
         $db->beginTransaction();
-
-        $db->prepare("DELETE FROM roomjoin WHERE room_id = :rid")
-           ->execute([':rid' => $roomId]);
-
-        $db->prepare("DELETE FROM room WHERE room_id = :rid")
-           ->execute([':rid' => $roomId]);
-
+        $db->prepare("DELETE FROM roomjoin WHERE room_id = :rid")->execute([':rid' => $roomId]);
+        $db->prepare("DELETE FROM room WHERE room_id = :rid")->execute([':rid' => $roomId]);
         $db->commit();
         return true;
-
     } catch (PDOException $e) {
         $db->rollBack();
         error_log("deleteRoom error: " . $e->getMessage());
@@ -101,25 +84,21 @@ function deleteRoom(PDO $db, int $userId, int $roomId): bool
 /**
  * Get all members of a room with rank + owner flag.
  */
-function getRoomMembers(PDO $db, int $roomId, int $ownerId): array
+function getRoomMembers(PDO $db, int $roomId): array
 {
     $sql = "SELECT 
                 rj.user_id,
                 u.username,
                 rj.user_rank,
-                (r.owner_id = rj.user_id) AS is_owner
+                CASE WHEN rj.user_id = r.owner_id THEN 1 ELSE 0 END AS is_owner
             FROM roomjoin rj
             JOIN useraccount u ON u.user_id = rj.user_id
-            JOIN room r ON r.room_id = rj.room_id AND r.owner_id = r.owner_id
+            JOIN room r ON r.room_id = rj.room_id
             WHERE rj.room_id = :rid
-              AND r.owner_id = :oid
             ORDER BY rj.user_rank ASC";
 
     $stmt = $db->prepare($sql);
-    $stmt->execute([
-        ':rid' => $roomId,
-        ':oid' => $ownerId
-    ]);
+    $stmt->execute([':rid' => $roomId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 

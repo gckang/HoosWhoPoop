@@ -272,17 +272,6 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
         }
     };
 
-    const fetchRoomMembers = async () => {
-        if (!selectedRoom) return;
-        try {
-            const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom}`);
-            const data = await res.json();
-            setLeaderboard(data); // Or setRooms depending on where you show members
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
 
     const handleInviteSubmit = async (e) => {
         e.preventDefault();
@@ -306,7 +295,10 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
 
 
             setSelectedFriends([]);
-            fetchRoomMembers();
+            const currentRoom = selectedRoom;
+            setSelectedRoom(null);       // temporarily deselect
+            setTimeout(() => setSelectedRoom(currentRoom), 10); // switch back
+
         } catch (e) {
             console.error("Invite error:", e);
         }

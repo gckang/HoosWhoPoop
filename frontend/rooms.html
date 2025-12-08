@@ -335,7 +335,6 @@ function Leaderboard({ selectedRoom }) {
             {!loading && selectedRoom && (
                 <ul className="list">
                     {leaderboard
-                        .sort((a, b) => b.user_rank - a.user_rank)
                         .map((member, index) => (
                             <li key={member.user_id} className="leaderboard-item">
                                 <span className="rank-number">{index + 1}.</span>

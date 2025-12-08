@@ -112,7 +112,7 @@ function getRoomMembers(PDO $db, int $roomId): array
             JOIN useraccount u ON u.user_id = rj.user_id
             JOIN room r ON r.room_id = rj.room_id
             WHERE rj.room_id = :rid
-            ORDER BY rj.user_rank DESC";
+            ORDER BY rj.user_rank ASC";
 
     $stmt = $db->prepare($sql);
     $stmt->execute([':rid' => $roomId]);

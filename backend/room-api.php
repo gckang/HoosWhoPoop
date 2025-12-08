@@ -33,7 +33,22 @@ try {
         // ----------------------------------------------------
         // GET: All rooms user is in
         // ----------------------------------------------------
+        // case 'GET':
+        //     $rooms = getAllUserRooms($db, $current_user_id);
+        //     echo json_encode($rooms);
+        //     break;
+
+
         case 'GET':
+            // if room_id is supplied → return leaderboard for that room
+            if (isset($_GET['room_id'])) {
+                $room_id = intval($_GET['room_id']);
+                $members = getRoomMembers($db, $room_id);
+                echo json_encode($members);
+                break;
+            }
+
+            // otherwise return the user’s rooms
             $rooms = getAllUserRooms($db, $current_user_id);
             echo json_encode($rooms);
             break;

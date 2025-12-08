@@ -88,4 +88,23 @@ function deleteRoom(PDO $db, int $userId, int $roomId): bool
     return true;
 }
 
+function getRoomMembers(PDO $db, int $roomId): array
+{
+    $sql = "SELECT 
+                rj.user_id,
+                u.username,
+                rj.user_rank,
+                (r.owner_id = rj.user_id) AS is_owner
+            FROM roomjoin rj
+            JOIN useraccount u ON u.user_id = rj.user_id
+            JOIN room r ON r.room_id = rj.room_id
+            WHERE rj.room_id = :rid
+            ORDER BY rj.user_rank DESC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute([':rid' => $roomId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
 ?>

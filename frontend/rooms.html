@@ -184,34 +184,65 @@ function FriendManager({ friends, loading, setFriends }) {
     );
 }
 
-function RoomItem({ room, onDelete }) {
+function RoomItem({ room, onDelete, onSelect }) {
     return (
-        <li className="poo-item">
-            <span>{room.room_id || room.owner_id}</span>                    
+        <li 
+            className="poo-item"
+            onClick={() => onSelect(room.room_id)}
+            style={{ cursor: "pointer" }}
+        >
+            <span>Room #{room.room_id}</span>
+
             <span className="list-actions">
-                <i className="fa-solid fa-trash delete-icon" onClick={() => onDelete(room.room_id)}></i>
+                <i 
+                    className="fa-solid fa-trash delete-icon"
+                    onClick={(e) => { 
+                        e.stopPropagation(); 
+                        onDelete(room.room_id); 
+                    }}
+                ></i>
             </span>
-        </li>            
+        </li>
     );
 }
 
 
+
 function RoomManager({ rooms, loading, setRooms }) {
-    const [newRoom, setNewRoom] = useState('');
+    const [selectedRoom, setSelectedRoom] = useState(null);
+    const [leaderboard, setLeaderboard] = useState([]);
+    const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
+    const fetchLeaderboard = async (roomID) => {
+        setLoadingLeaderboard(true);
+        try {
+            const res = await fetch(`${ROOM_API_URL}?room_id=${roomID}`);
+            const data = await res.json();
+            setLeaderboard(data);   // SET LEADERBOARD
+        } catch (e) {
+            console.error("Error fetching leaderboard:", e);
+        }
+        setLoadingLeaderboard(false);
+    };
+
+    const handleSelectRoom = (roomID) => {
+        setSelectedRoom(roomID);
+        fetchLeaderboard(roomID);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!newRoom.trim()) return;
         try {
             const response = await fetch(ROOM_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ })
+                body: JSON.stringify({})
             });
-            const result = await response.json();
-            if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add room');
 
-            setNewRoom('');
+            const result = await response.json();
+            if (!response.ok || result.status === 'error')
+                throw new Error(result.message);
+
             setRooms(prev => [result.room, ...prev]);
         } catch (e) {
             console.error(e);
@@ -225,35 +256,75 @@ function RoomManager({ rooms, loading, setRooms }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ room_id: roomID })
             });
+
             const result = await res.json();
             if (result.status !== 'success') throw new Error(result.message);
-            setRooms(prev => prev.filter(f => r.room_id !== roomID));
+
+            setRooms(prev => prev.filter(r => r.room_id !== roomID));
+
+            if (selectedRoom === roomID) {
+                setSelectedRoom(null);
+                setLeaderboard([]);
+            }
         } catch (e) {
             console.error(e);
         }
     };
 
     return(
-        <section>
-            <h2>Rooms</h2>
-            <form onSubmit={handleSubmit} className="poo-form">
-                <input
-                    value={newRoom}
-                    onChange={e => setNewRoom(e.target.value)}
-                    placeholder="Add friend using their user ID..."
-                    className="poo-input"
-                />
-                <button type="submit" className="add-button">Create Room</button>
-            </form>
+        <div className="room-and-leaderboard">
+            <section>
+                <h2>Rooms</h2>
 
-            {loading ? <div className="spinner"></div> :
-                <ul className="list">
-                    {rooms.map(r => (
-                        <RoomItem key={r.room_id} room={r} onDelete={handleDelete} />
-                    ))}
-                </ul>
-            }
-        </section>
+                <form onSubmit={handleSubmit} className="poo-form">
+                    <button type="submit" className="add-button">Create Room</button>
+                </form>
+
+                {loading ? (
+                    <div className="spinner"></div>
+                ) : (
+                    <ul className="list">
+                        {rooms.map(room => (
+                            <RoomItem 
+                                key={room.room_id} 
+                                room={room} 
+                                onDelete={handleDelete}
+                                onSelect={handleSelectRoom}
+                            />
+                        ))}
+                    </ul>
+                )}
+            </section>
+
+            <section className="leaderboard">
+                <h2>Leaderboard</h2>
+
+                {selectedRoom === null && <p>Select a room to view its leaderboard.</p>}
+
+                {loadingLeaderboard && <div className="spinner"></div>}
+
+                {!loadingLeaderboard && selectedRoom !== null && (
+                    <ul className="list">
+                        {leaderboard
+                            .sort((a, b) => b.user_rank - a.user_rank)   // highest rank first
+                            .map((member, index) => (
+                                <li key={member.user_id} className="leaderboard-item">
+                                    <span className="rank-number">{index + 1}.</span>
+
+                                    <span className="rank-username">
+                                        {member.username}
+                                    </span>
+
+                                    {member.is_owner == 1 && (
+                                        <i className="fa-solid fa-crown owner-icon"></i>
+                                    )}
+                                </li>
+                        ))}
+                    </ul>
+                )}
+
+            </section>
+        </div>
     );
 }
 

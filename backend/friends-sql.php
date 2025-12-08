@@ -13,34 +13,28 @@
  */
 function addFriend($db, int $userId, int $friendId)
 {
-    if ($userId === $friendId) return false;
-
-    $sql = "INSERT INTO friend (user_id_1, user_id_2) VALUES (:userId, :friendId)";
-
     try {
+        $sql = "CALL AddFriend(:userId, :friendId)";
         $stmt = $db->prepare($sql);
         $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':friendId', $friendId, PDO::PARAM_INT);
         $stmt->execute();
 
-        
-        if ($stmt->rowCount() > 0) {
-            // Fetch username
-            $query = "SELECT username FROM useraccount WHERE user_id = :friendId";
-            $stmt2 = $db->prepare($query);
-            $stmt2->bindValue(':friendId', $friendId, PDO::PARAM_INT);
-            $stmt2->execute();
-            $row = $stmt2->fetch(PDO::FETCH_ASSOC);
+        // Fetch username
+        $query = "SELECT username FROM useraccount WHERE user_id = :friendId";
+        $stmt2 = $db->prepare($query);
+        $stmt2->bindValue(':friendId', $friendId, PDO::PARAM_INT);
+        $stmt2->execute();
+        $row = $stmt2->fetch(PDO::FETCH_ASSOC);
 
-            return [
-                'friend_id' => $friendId,
-                'username' => $row['username'] ?? ''
-            ];
+        return [
+            'friend_id' => $friendId,
+            'username' => $row['username'] ?? ''
+        ];
 
-        }
     } catch (PDOException $e) {
-        // Duplicate entry or other errors
-        if ($e->getCode() === '23000') return false; // already friends
+        // Procedure throws SQLSTATE '45000' for invalid cases
+        if ($e->getCode() === '45000' || $e->getCode() === '23000') return false;
         error_log("addFriend error: " . $e->getMessage());
         throw $e;
     }

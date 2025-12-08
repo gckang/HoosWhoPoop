@@ -200,7 +200,7 @@ function FriendManager({ friends, loading, setFriends, user}) {
     );
 }
 
-function RoomItem({ room, onDelete, onSelect }) {
+function RoomItem({ room, onDelete, onSelect, isOwner }) {
     return (
         <li 
             className="poo-item"
@@ -210,13 +210,15 @@ function RoomItem({ room, onDelete, onSelect }) {
             <span>Room #{room.room_id}</span>
 
             <span className="list-actions">
-                <i 
-                    className="fa-solid fa-trash delete-icon"
-                    onClick={(e) => { 
-                        e.stopPropagation(); 
-                        onDelete(room.room_id); 
-                    }}
-                ></i>
+                {isOwner && (
+                    <i 
+                        className="fa-solid fa-trash delete-icon"
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            onDelete(room.room_id); 
+                        }}
+                    ></i>
+                )}
             </span>
         </li>
     );
@@ -266,7 +268,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                 throw new Error(result.message);
             }
 
-            setRooms(prev => [result.room, ...prev]);
+            setRooms(prev => [...prev, result.room]);
 
         } catch (error) {
             console.error("Create room error:", error);
@@ -326,6 +328,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                                 room={room}
                                 onDelete={handleDelete}
                                 onSelect={setSelectedRoom}
+                                isOwner={room.owner_id === user.user_id}
                             />
                         ))}
                     </ul>

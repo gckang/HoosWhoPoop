@@ -146,8 +146,8 @@
                             </div>
 
                             <div className="three-columns">
-                                <EventAdder goals={goals} onEventAdded={handleEventAdded} setError={setError} />
-                                <EventDisplay goals={goals} events={events} setEvents={setEvents} loading={loading.events}/>
+                                <EventAdder goals={goals} habits={habits} onEventAdded={handleEventAdded} setError={setError} />
+                                <EventDisplay goals={goals} habits={habits} events={events} setEvents={setEvents} loading={loading.events}/>
                             </div>
 
                             <div className="three-columns">
@@ -551,7 +551,7 @@
             );
         }
 
-        function EventAdder({goals, onEventAdded, setError}) {
+        function EventAdder({goals, habits, onEventAdded, setError}) {
             const [selectedGoal,setSelectedGoal] = useState('');
             const [day,setDay] = useState('');
             const [startTime,setStartTime] = useState('');
@@ -593,13 +593,17 @@
                 <section className="habit-section">
                     <h2>Track Events</h2>
                     <form onSubmit={handleSubmit} className="poo-form">
-                        <select value={selectedGoal} onChange={e=>setSelectedGoal(e.target.value)} className="poo-select">
+                        <select value={selectedGoal} onChange={e => setSelectedGoal(e.target.value)} className="poo-select">
                             <option value="">Select a goal to log time for...</option>
-                            {goals.map(g => (
-                                <option key={g.goal_id} value={g.goal_id}>
-                                    {g.category} (by {g.deadline})
-                                </option>
-                            ))}
+                            {goals.map(g => {
+                                const habit = habits.find(h => parseInt(h.habit_id) === parseInt(g.habit_id));
+                                const habitName = habit ? habit.category : "Unknown";
+                                return (
+                                    <option key={g.goal_id} value={g.goal_id}>
+                                        {habitName} (by {g.deadline})
+                                    </option>
+                                );
+                            })}
                         </select>
 
                         <input type="date" value={day} onChange={e=>setDay(e.target.value)} className="poo-input"/>
@@ -615,7 +619,7 @@
             );
         }
 
-        function EventDisplay({goals, events, setEvents, loading}) {
+        function EventDisplay({goals, habits, events, setEvents, loading}) {
             const [selectedGoal, setSelectedGoal] = useState('');
             const [selectedDate, setSelectedDate] = useState('');
             const [editingEventId, setEditingEventId] = useState(null);
@@ -724,34 +728,63 @@
 
                     {loading ? <LoadingSpinner/> : (
                         <ul className="list">
-                            {events.map(ev => (
-                                <li key={ev.event_id} className="poo-item">
-                                    {editingEventId === ev.event_id ? (
-                                        <div className="edit-event">
-                                            <select value={editData.goal_id} onChange={e => setEditData({...editData, goal_id: e.target.value})}>
-                                                {goals.map(g => (
-                                                    <option key={g.goal_id} value={g.goal_id}>
-                                                        {g.category} (by {g.deadline})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <input type="date" value={editData.day} onChange={e => setEditData({...editData, day: e.target.value})}/>
-                                            <input type="time" value={editData.start_time} onChange={e => setEditData({...editData, start_time: e.target.value})}/>
-                                            <input type="time" value={editData.end_time} onChange={e => setEditData({...editData, end_time: e.target.value})}/>
-                                            <button onClick={() => saveEdit(ev.event_id)} className="icon-button">✔</button>
-                                            <button onClick={cancelEdit} className="icon-button">✖</button>
-                                        </div>
-                                    ) : (
-                                        <React.Fragment>
-                                            {ev.category}: {ev.day} from {ev.start_time} to {ev.end_time}
-                                            <span className="list-actions">
-                                                <i className="fa-solid fa-pen edit-icon" onClick={() => startEdit(ev)}></i>
-                                                <i className="fa-solid fa-trash delete-icon" onClick={() => deleteEvent(ev.event_id)}></i>
-                                            </span>
-                                        </React.Fragment>
-                                    )}
-                                </li>
-                            ))}
+                            {events.map(ev => {
+                                const habit = goals.find(g => g.goal_id === ev.goal_id);
+                                const habitObj = habit ? habits.find(h => h.habit_id === habit.habit_id) : null;
+                                const habitName = habitObj ? habitObj.category : "Unknown";
+
+                                return (
+                                    <li key={ev.event_id} className="poo-item">
+                                        {editingEventId === ev.event_id ? (
+                                            <div className="edit-event">
+                                                <select
+                                                    value={editData.goal_id}
+                                                    onChange={e => setEditData({ ...editData, goal_id: e.target.value })}
+                                                >
+                                                    {goals.map(g => {
+                                                        const h = habits.find(hb => hb.habit_id === g.habit_id);
+                                                        const name = h ? h.category : "Unknown";
+                                                        return (
+                                                            <option key={g.goal_id} value={g.goal_id}>
+                                                                {name} (by {g.deadline})
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+                                                <input
+                                                    type="date"
+                                                    value={editData.day}
+                                                    onChange={e => setEditData({ ...editData, day: e.target.value })}
+                                                />
+                                                <input
+                                                    type="time"
+                                                    value={editData.start_time}
+                                                    onChange={e => setEditData({ ...editData, start_time: e.target.value })}
+                                                />
+                                                <input
+                                                    type="time"
+                                                    value={editData.end_time}
+                                                    onChange={e => setEditData({ ...editData, end_time: e.target.value })}
+                                                />
+                                                <button onClick={() => saveEdit(ev.event_id)} className="icon-button">✔</button>
+                                                <button onClick={cancelEdit} className="icon-button">✖</button>
+                                            </div>
+                                        ) : (
+                                            <React.Fragment>
+                                                <span>
+                                                    <strong>{habitName}</strong> &mdash; {ev.day}, {ev.start_time}–{ev.end_time}
+                                                </span>
+                                                <span className="list-actions">
+                                                    <i className="fa-solid fa-pen edit-icon" onClick={() => startEdit(ev)}></i>
+                                                    <i className="fa-solid fa-trash delete-icon" onClick={() => deleteEvent(ev.event_id)}></i>
+                                                </span>
+                                            </React.Fragment>
+                                        )}
+                                    </li>
+                                );
+                            })}
+
+
                         </ul>
                     )}
                 </section>

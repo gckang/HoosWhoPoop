@@ -119,4 +119,43 @@ function getRoomMembers(PDO $db, int $roomId): array
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function inviteUsersToRoom(PDO $db, int $ownerId, int $roomId, array $userIds): bool
+{
+    try {
+        // Check if current user is owner of the room
+        $stmt = $db->prepare("SELECT owner_id FROM room WHERE room_id = :rid");
+        $stmt->execute([':rid' => $roomId]);
+        $room = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$room || intval($room['owner_id']) !== $ownerId) {
+            return false; // Not owner, cannot invite
+        }
+
+        $db->beginTransaction();
+
+        $insertStmt = $db->prepare("
+            INSERT INTO roomjoin (room_id, user_id, user_rank)
+            SELECT :room_id, :user_id, 1
+            WHERE NOT EXISTS (
+                SELECT 1 FROM roomjoin WHERE room_id = :room_id AND user_id = :user_id
+            )
+        ");
+
+        foreach ($userIds as $userId) {
+            $insertStmt->execute([
+                ':room_id' => $roomId,
+                ':user_id' => $userId
+            ]);
+        }
+
+        $db->commit();
+        return true;
+
+    } catch (PDOException $e) {
+        $db->rollBack();
+        error_log("inviteUsersToRoom error: " . $e->getMessage());
+        return false;
+    }
+}
+
 ?>

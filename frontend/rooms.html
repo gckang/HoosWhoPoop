@@ -27,6 +27,7 @@ const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
 // const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
 const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
 const ROOM_API_URL = `${API_BASE_URL}/room-api.php`;
+const ROOM_INVITE_URL = `${API_BASE_URL}/room-invite-api.php`;
 const FRIEND_API_URL = `${API_BASE_URL}/friends-api.php`;
 const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
 const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
@@ -111,6 +112,7 @@ function App() {
                             setSelectedRoom={setSelectedRoom}
                             onSelectRoom={setSelectedRoom}
                             user={user}
+                            friends={friends}
                         />
                     </div>
 
@@ -219,7 +221,8 @@ function RoomItem({ room, onDelete, onSelect }) {
     );
 }
 
-function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, user }) {
+function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, user, friends }) {
+    const [selectedFriends, setSelectedFriends] = useState([]);
 
     const handleDelete = async (roomID) => {
         try {
@@ -246,13 +249,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
         e.preventDefault();
 
         try {
-            // const nextRoomId =
-            //     rooms.length > 0
-            //         ? Math.max(...rooms.map(r => parseInt(r.room_id))) + 1
-            //         : 1;
-
             const payload = {
-                //room_id: nextRoomId,
                 owner_id: user.user_id
             };
 
@@ -275,30 +272,107 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
         }
     };
 
+    const fetchRoomMembers = async () => {
+        if (!selectedRoom) return;
+        try {
+            const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom}`);
+            const data = await res.json();
+            setLeaderboard(data); // Or setRooms depending on where you show members
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+
+    const handleInviteSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedRoom || selectedFriends.length === 0) return;
+
+        try {
+            const response = await fetch(ROOM_INVITE_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    room_id: selectedRoom,
+                    user_ids: selectedFriends
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok || result.status === "error") {
+                throw new Error(result.message);
+            }
+
+
+            setSelectedFriends([]);
+            fetchRoomMembers();
+        } catch (e) {
+            console.error("Invite error:", e);
+        }
+    };
+
+
 
     return (
-        <section>
-            <h2>Rooms</h2>
+        <div>
+            <section className="room">
+                <h2>Rooms</h2>
 
-            <form onSubmit={handleSubmit} className="poo-form">
-                <button type="submit" className="add-button">Add New Room</button>
-            </form>
+                <form onSubmit={handleSubmit} className="poo-form">
+                    <button type="submit" className="add-button">Add New Room</button>
+                </form>
 
-            {loading ? (
-                <div className="spinner"></div>
-            ) : (
-                <ul className="list">
-                    {rooms.map(room => (
-                        <RoomItem 
-                            key={room.room_id}
-                            room={room}
-                            onDelete={handleDelete}
-                            onSelect={setSelectedRoom}
-                        />
-                    ))}
-                </ul>
-            )}
-        </section>
+                {loading ? (
+                    <div className="spinner"></div>
+                ) : (
+                    <ul className="list">
+                        {rooms.map(room => (
+                            <RoomItem 
+                                key={room.room_id}
+                                room={room}
+                                onDelete={handleDelete}
+                                onSelect={setSelectedRoom}
+                            />
+                        ))}
+                    </ul>
+                )}
+            </section>
+            <section className="invite">
+                <h2>Add friends to room</h2>
+
+                {!selectedRoom && <p>Select a room first.</p>}
+
+                {selectedRoom && (
+                    <form onSubmit={handleInviteSubmit} className="poo-form">
+                        <ul className="list">
+                            {friends.map(friend => (
+                                <li key={friend.friend_id} className="poo-item">
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            value={friend.friend_id}
+                                            checked={selectedFriends.includes(friend.friend_id)}
+                                            onChange={(e) => {
+                                                const fid = friend.friend_id;
+                                                setSelectedFriends(prev =>
+                                                    e.target.checked
+                                                        ? [...prev, fid]
+                                                        : prev.filter(id => id !== fid)
+                                                );
+                                            }}
+                                        />
+                                        {friend.username}
+                                    </label>
+                                </li>
+                            ))}
+                        </ul>
+                        <button type="submit" className="add-button">Invite Selected Friends</button>
+                    </form>
+                )}
+            </section>
+
+        </div>
     );
 }
 
@@ -349,129 +423,6 @@ function Leaderboard({ selectedRoom }) {
         </section>
     );
 }
-
-
-
-
-// function RoomManager({ rooms, loading, setRooms }) {
-//     const [selectedRoom, setSelectedRoom] = useState(null);
-//     const [leaderboard, setLeaderboard] = useState([]);
-//     const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
-
-//     const fetchLeaderboard = async (roomID) => {
-//         setLoadingLeaderboard(true);
-//         try {
-//             const res = await fetch(`${ROOM_API_URL}?room_id=${roomID}`);
-//             const data = await res.json();
-//             setLeaderboard(data);   // SET LEADERBOARD
-//         } catch (e) {
-//             console.error("Error fetching leaderboard:", e);
-//         }
-//         setLoadingLeaderboard(false);
-//     };
-
-//     const handleSelectRoom = (roomID) => {
-//         setSelectedRoom(roomID);
-//         fetchLeaderboard(roomID);
-//     };
-
-//     const handleSubmit = async (e) => {
-//         e.preventDefault();
-//         try {
-//             const response = await fetch(ROOM_API_URL, {
-//                 method: 'POST',
-//                 headers: { 'Content-Type': 'application/json' },
-//                 body: JSON.stringify({})
-//             });
-
-//             const result = await response.json();
-//             if (!response.ok || result.status === 'error')
-//                 throw new Error(result.message);
-
-//             setRooms(prev => [result.room, ...prev]);
-//         } catch (e) {
-//             console.error(e);
-//         }
-//     };
-
-//     const handleDelete = async (roomID) => {
-//         try {
-//             const res = await fetch(ROOM_API_URL, {
-//                 method: "DELETE",
-//                 headers: { "Content-Type": "application/json" },
-//                 body: JSON.stringify({ room_id: roomID })
-//             });
-
-//             const result = await res.json();
-//             if (result.status !== 'success') throw new Error(result.message);
-
-//             setRooms(prev => prev.filter(r => r.room_id !== roomID));
-
-//             if (selectedRoom === roomID) {
-//                 setSelectedRoom(null);
-//                 setLeaderboard([]);
-//             }
-//         } catch (e) {
-//             console.error(e);
-//         }
-//     };
-
-//     return(
-//         <div className="room-and-leaderboard">
-//             <section>
-//                 <h2>Rooms</h2>
-
-//                 <form onSubmit={handleSubmit} className="poo-form">
-//                     <button type="submit" className="add-button">Create Room</button>
-//                 </form>
-
-//                 {loading ? (
-//                     <div className="spinner"></div>
-//                 ) : (
-//                     <ul className="list">
-//                         {rooms.map(room => (
-//                             <RoomItem 
-//                                 key={room.room_id} 
-//                                 room={room} 
-//                                 onDelete={handleDelete}
-//                                 onSelect={handleSelectRoom}
-//                             />
-//                         ))}
-//                     </ul>
-//                 )}
-//             </section>
-
-//             <section className="leaderboard">
-//                 <h2>Leaderboard</h2>
-
-//                 {selectedRoom === null && <p>Select a room to view its leaderboard.</p>}
-
-//                 {loadingLeaderboard && <div className="spinner"></div>}
-
-//                 {!loadingLeaderboard && selectedRoom !== null && (
-//                     <ul className="list">
-//                         {leaderboard
-//                             .sort((a, b) => b.user_rank - a.user_rank)   // highest rank first
-//                             .map((member, index) => (
-//                                 <li key={member.user_id} className="leaderboard-item">
-//                                     <span className="rank-number">{index + 1}.</span>
-
-//                                     <span className="rank-username">
-//                                         {member.username}
-//                                     </span>
-
-//                                     {member.is_owner == 1 && (
-//                                         <i className="fa-solid fa-crown owner-icon"></i>
-//                                     )}
-//                                 </li>
-//                         ))}
-//                     </ul>
-//                 )}
-
-//             </section>
-//         </div>
-//     );
-// }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>

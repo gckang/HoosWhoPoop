@@ -100,7 +100,7 @@ function App() {
             <div className="content-container">
                 <div className="main-columns">
                     <div className="three-columns">
-                        <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
+                        <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} user={user}/>
                     </div>
 
                     <div className="three-columns">
@@ -139,7 +139,7 @@ function FriendItem({ friend, onDelete }) {
     );
 }
 
-function FriendManager({ friends, loading, setFriends }) {
+function FriendManager({ friends, loading, setFriends, user}) {
     const [newFriend, setNewFriend] = useState('');
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -178,6 +178,7 @@ function FriendManager({ friends, loading, setFriends }) {
     return (
         <section> 
             <h2>Friends</h2>
+            {user && <p>Your user ID is {user.user_id}.</p>}
             <form onSubmit={handleSubmit} className="poo-form">
                 <input
                     value={newFriend}

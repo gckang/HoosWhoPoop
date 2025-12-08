@@ -42,23 +42,71 @@ body {
     padding: 16px;
     font-family: sans-serif;
 }
+
 .app-header {
-    display: flex;                /* make header a flex container */
-    align-items: center;          /* vertically center items */
-    justify-content: space-between; /* space out items across the bar */
-    background-color: #333333;    /* make the bar colored */
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* keeps left and right at edges */
+    background-color: var(--blue);
     padding: 10px 20px;
     color: white;
-    top: 0;
+}
+
+.app-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* small space between logo and "Hello pooper" */
+}
+
+.app-header-left p {
+    white-space: nowrap;
+    color: white;
+    display: flex;        /* children align horizontally */
+    align-items: center;  /* vertical alignment */
+    margin: 0;            /* remove default margin */
+    gap: 5px;             /* small space between text and username */
+}
+
+
+.app-header-center {
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%); /* truly center it in the header */
+    gap: 20px; /* space between links */
+}
+
+.app-header .navigation {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 20px;
+}
+
+.app-header .navigation li a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    padding: 10px 16px;
+}
+
+.app-header .navigation li a:hover {
+    background-color: #64baac;
+}
+
+.app-header-right {
+    display: flex;
+    align-items: center;
 }
 
 .app-header h1 {
-    margin: 0;
+    margin-right: 2%;
     font-size: 1.5em;
 }
 
 .app-header .username {
-    margin-left: 10px;
     font-weight: bold;
 }
 
@@ -66,7 +114,7 @@ body {
     list-style-type: none;
     margin: 0;
     padding: 0;
-    display: flex;               /* horizontal menu items */
+    display: flex;               
 }
 
 .app-header .navigation li a {
@@ -77,23 +125,29 @@ body {
 }
 
 .app-header .navigation li a:hover {
-    background-color: #111111;
+    background-color: #64baac;
 }
 
 .app-header .logout-button {
     margin-left: 20px;
     padding: 8px 12px;
-    background-color: #555555;
+    background-color: #AA4848;
     color: white;
     border: none;
     cursor: pointer;
 }
 
 .app-header .logout-button:hover {
-    background-color: #111111;
+    background-color: #c95050;
 }
 
-.username { font-family: monospace; background-color: #bfdbfe; padding: 2px 6px; border-radius: 4px; }
+.username { 
+    font-family: monospace; 
+    color: white;
+    background-color: #573d3a; 
+    padding: 2px 6px; 
+    border-radius: 4px; 
+}
 .logout-button { background-color: #ef4444; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; }
 .logout-button:hover { background-color: #dc2626; }
 
@@ -120,14 +174,25 @@ section {
     padding: 3%;
     margin-bottom: 16px; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    border-radius: 8px;  
+    border-radius: 5px;  
     border: 3px solid var(--blue);
 }
 
 /* Forms */
 .poo-form { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .poo-input, .poo-select { padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; flex-grow: 1; }
-.add-button { background-color: #84B183; color: white; border: none; border-radius: 4px; cursor: pointer; } /*add hover later*/
+.add-button { 
+    background-color: #84B183; 
+    color: white; 
+    border: none; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    min-width: 100px;   /* ensures button never smaller than this */
+    height: 36px;       /* consistent height */
+    padding: 0 12px;    /* horizontal padding */
+    font-size: 14px;    /* consistent text size */
+    text-align: center; /* center text */
+} 
 
 
 .list li {
@@ -177,7 +242,7 @@ section {
 
 .progress-bar {
     height: 100%;
-    background: #4caf50;
+    background: #84B183;
     transition: width 0.4s ease;
 }
 
@@ -261,5 +326,10 @@ body {
     top: 4px;
     right: 4px;
     cursor: pointer;
+}
+
+p {
+    font-size: small;
+    color: gray;
 }
 

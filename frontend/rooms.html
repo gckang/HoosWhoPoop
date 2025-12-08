@@ -43,6 +43,8 @@ function App() {
     const [user, setUser] = useState(null);
     const [goals, setGoals] = useState([]);
     const [rooms, setRooms] = useState([]);
+    const [selectedRoom, setSelectedRoom] = useState(null);
+    const [leaderboard, setLeaderboard] = useState([]);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -99,15 +101,25 @@ function App() {
                     <div className="three-columns">
                         <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
                     </div>
+
                     <div className="three-columns">
-                        <RoomManager rooms={rooms} loading={loading.rooms} setRooms={setRooms}/>
+                        <RoomList 
+                            rooms={rooms}
+                            loading={loading.rooms}
+                            setRooms={setRooms}
+                            selectedRoom={selectedRoom}
+                            setSelectedRoom={setSelectedRoom}
+                            onSelectRoom={setSelectedRoom}
+                        />
                     </div>
+
                     <div className="three-columns">
-                        <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
+                        <Leaderboard 
+                            selectedRoom={selectedRoom}
+                        />
                     </div>
                 </div>
             </div>
-
         </div>
     );
 }
@@ -206,28 +218,27 @@ function RoomItem({ room, onDelete, onSelect }) {
     );
 }
 
+function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom }) {
 
-
-function RoomManager({ rooms, loading, setRooms }) {
-    const [selectedRoom, setSelectedRoom] = useState(null);
-    const [leaderboard, setLeaderboard] = useState([]);
-    const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
-
-    const fetchLeaderboard = async (roomID) => {
-        setLoadingLeaderboard(true);
+    const handleDelete = async (roomID) => {
         try {
-            const res = await fetch(`${ROOM_API_URL}?room_id=${roomID}`);
-            const data = await res.json();
-            setLeaderboard(data);   // SET LEADERBOARD
-        } catch (e) {
-            console.error("Error fetching leaderboard:", e);
-        }
-        setLoadingLeaderboard(false);
-    };
+            const res = await fetch(ROOM_API_URL, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ room_id: roomID })
+            });
 
-    const handleSelectRoom = (roomID) => {
-        setSelectedRoom(roomID);
-        fetchLeaderboard(roomID);
+            const result = await res.json();
+            if (result.status !== 'success') throw new Error(result.message);
+
+            setRooms(prev => prev.filter(r => r.room_id !== roomID));
+
+            if (selectedRoom === roomID) {
+                setSelectedRoom(null);
+            }
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -249,84 +260,203 @@ function RoomManager({ rooms, loading, setRooms }) {
         }
     };
 
-    const handleDelete = async (roomID) => {
-        try {
-            const res = await fetch(ROOM_API_URL, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ room_id: roomID })
-            });
+    return (
+        <section>
+            <h2>Rooms</h2>
 
-            const result = await res.json();
-            if (result.status !== 'success') throw new Error(result.message);
+            <form onSubmit={handleSubmit} className="poo-form">
+                <button type="submit" className="add-button">Create Room</button>
+            </form>
 
-            setRooms(prev => prev.filter(r => r.room_id !== roomID));
-
-            if (selectedRoom === roomID) {
-                setSelectedRoom(null);
-                setLeaderboard([]);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    return(
-        <div className="room-and-leaderboard">
-            <section>
-                <h2>Rooms</h2>
-
-                <form onSubmit={handleSubmit} className="poo-form">
-                    <button type="submit" className="add-button">Create Room</button>
-                </form>
-
-                {loading ? (
-                    <div className="spinner"></div>
-                ) : (
-                    <ul className="list">
-                        {rooms.map(room => (
-                            <RoomItem 
-                                key={room.room_id} 
-                                room={room} 
-                                onDelete={handleDelete}
-                                onSelect={handleSelectRoom}
-                            />
-                        ))}
-                    </ul>
-                )}
-            </section>
-
-            <section className="leaderboard">
-                <h2>Leaderboard</h2>
-
-                {selectedRoom === null && <p>Select a room to view its leaderboard.</p>}
-
-                {loadingLeaderboard && <div className="spinner"></div>}
-
-                {!loadingLeaderboard && selectedRoom !== null && (
-                    <ul className="list">
-                        {leaderboard
-                            .sort((a, b) => b.user_rank - a.user_rank)   // highest rank first
-                            .map((member, index) => (
-                                <li key={member.user_id} className="leaderboard-item">
-                                    <span className="rank-number">{index + 1}.</span>
-
-                                    <span className="rank-username">
-                                        {member.username}
-                                    </span>
-
-                                    {member.is_owner == 1 && (
-                                        <i className="fa-solid fa-crown owner-icon"></i>
-                                    )}
-                                </li>
-                        ))}
-                    </ul>
-                )}
-
-            </section>
-        </div>
+            {loading ? (
+                <div className="spinner"></div>
+            ) : (
+                <ul className="list">
+                    {rooms.map(room => (
+                        <RoomItem 
+                            key={room.room_id}
+                            room={room}
+                            onDelete={handleDelete}
+                            onSelect={setSelectedRoom}
+                        />
+                    ))}
+                </ul>
+            )}
+        </section>
     );
 }
+
+function Leaderboard({ selectedRoom }) {
+    const [leaderboard, setLeaderboard] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!selectedRoom) return;
+
+        const fetchLeaderboard = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom}`);
+                const data = await res.json();
+                setLeaderboard(data);
+            } catch (e) {
+                console.error("Error fetching leaderboard:", e);
+            }
+            setLoading(false);
+        };
+
+        fetchLeaderboard();
+    }, [selectedRoom]);
+
+    return (
+        <section>
+            <h2>Leaderboard</h2>
+
+            {!selectedRoom && <p>Select a room to view its leaderboard.</p>}
+
+            {loading && <div className="spinner"></div>}
+
+            {!loading && selectedRoom && (
+                <ul className="list">
+                    {leaderboard
+                        .sort((a, b) => b.user_rank - a.user_rank)
+                        .map((member, index) => (
+                            <li key={member.user_id} className="leaderboard-item">
+                                <span className="rank-number">{index + 1}.</span>
+                                <span className="rank-username">{member.username}</span>
+                                {member.is_owner == 1 && (
+                                    <i className="fa-solid fa-crown owner-icon"></i>
+                                )}
+                            </li>
+                        ))}
+                </ul>
+            )}
+        </section>
+    );
+}
+
+
+
+
+// function RoomManager({ rooms, loading, setRooms }) {
+//     const [selectedRoom, setSelectedRoom] = useState(null);
+//     const [leaderboard, setLeaderboard] = useState([]);
+//     const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
+//     const fetchLeaderboard = async (roomID) => {
+//         setLoadingLeaderboard(true);
+//         try {
+//             const res = await fetch(`${ROOM_API_URL}?room_id=${roomID}`);
+//             const data = await res.json();
+//             setLeaderboard(data);   // SET LEADERBOARD
+//         } catch (e) {
+//             console.error("Error fetching leaderboard:", e);
+//         }
+//         setLoadingLeaderboard(false);
+//     };
+
+//     const handleSelectRoom = (roomID) => {
+//         setSelectedRoom(roomID);
+//         fetchLeaderboard(roomID);
+//     };
+
+//     const handleSubmit = async (e) => {
+//         e.preventDefault();
+//         try {
+//             const response = await fetch(ROOM_API_URL, {
+//                 method: 'POST',
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({})
+//             });
+
+//             const result = await response.json();
+//             if (!response.ok || result.status === 'error')
+//                 throw new Error(result.message);
+
+//             setRooms(prev => [result.room, ...prev]);
+//         } catch (e) {
+//             console.error(e);
+//         }
+//     };
+
+//     const handleDelete = async (roomID) => {
+//         try {
+//             const res = await fetch(ROOM_API_URL, {
+//                 method: "DELETE",
+//                 headers: { "Content-Type": "application/json" },
+//                 body: JSON.stringify({ room_id: roomID })
+//             });
+
+//             const result = await res.json();
+//             if (result.status !== 'success') throw new Error(result.message);
+
+//             setRooms(prev => prev.filter(r => r.room_id !== roomID));
+
+//             if (selectedRoom === roomID) {
+//                 setSelectedRoom(null);
+//                 setLeaderboard([]);
+//             }
+//         } catch (e) {
+//             console.error(e);
+//         }
+//     };
+
+//     return(
+//         <div className="room-and-leaderboard">
+//             <section>
+//                 <h2>Rooms</h2>
+
+//                 <form onSubmit={handleSubmit} className="poo-form">
+//                     <button type="submit" className="add-button">Create Room</button>
+//                 </form>
+
+//                 {loading ? (
+//                     <div className="spinner"></div>
+//                 ) : (
+//                     <ul className="list">
+//                         {rooms.map(room => (
+//                             <RoomItem 
+//                                 key={room.room_id} 
+//                                 room={room} 
+//                                 onDelete={handleDelete}
+//                                 onSelect={handleSelectRoom}
+//                             />
+//                         ))}
+//                     </ul>
+//                 )}
+//             </section>
+
+//             <section className="leaderboard">
+//                 <h2>Leaderboard</h2>
+
+//                 {selectedRoom === null && <p>Select a room to view its leaderboard.</p>}
+
+//                 {loadingLeaderboard && <div className="spinner"></div>}
+
+//                 {!loadingLeaderboard && selectedRoom !== null && (
+//                     <ul className="list">
+//                         {leaderboard
+//                             .sort((a, b) => b.user_rank - a.user_rank)   // highest rank first
+//                             .map((member, index) => (
+//                                 <li key={member.user_id} className="leaderboard-item">
+//                                     <span className="rank-number">{index + 1}.</span>
+
+//                                     <span className="rank-username">
+//                                         {member.username}
+//                                     </span>
+
+//                                     {member.is_owner == 1 && (
+//                                         <i className="fa-solid fa-crown owner-icon"></i>
+//                                     )}
+//                                 </li>
+//                         ))}
+//                     </ul>
+//                 )}
+
+//             </section>
+//         </div>
+//     );
+// }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>

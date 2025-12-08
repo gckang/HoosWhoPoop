@@ -379,12 +379,29 @@ function Leaderboard({ selectedRoom }) {
     React.useEffect(() => {
         if (!selectedRoom) return;
 
+        let firstLoad = true;
         const fetchLeaderboard = async () => {
             try {
-                setLoading(true);
+                if (firstLoad) setLoading(true);
                 const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom.room_id}`);
                 const data = await res.json();
-                setLeaderboard(data);
+                
+                // Only update if the leaderboard actually changed
+                const isEqual =
+                    data.length === leaderboard.length &&
+                    data.every((member, idx) =>
+                        member.user_id === (leaderboard[idx] && leaderboard[idx].user_id) &&
+                        member.username === (leaderboard[idx] && leaderboard[idx].username) &&
+                        Number(member.is_owner) === Number(leaderboard[idx] && leaderboard[idx].is_owner)
+                    );
+
+                if (!isEqual) setLeaderboard(data);
+
+                if (firstLoad) {
+                    setLoading(false);
+                    firstLoad = false;
+                }
+                
             } catch (e) {
                 console.error("Error fetching leaderboard:", e);
             } finally {

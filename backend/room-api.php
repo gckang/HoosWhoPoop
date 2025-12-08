@@ -48,19 +48,17 @@ try {
         case 'POST':
             $data = json_decode(file_get_contents('php://input'));
 
-            if (!isset($data->room_id) || !isset($data->owner_id)) {
+            if (!isset($data->owner_id)) {
                 http_response_code(400);
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'room_id and owner_id required.'
+                    'message' => 'owner_id required.'
                 ]);
                 break;
             }
 
-            $room_id = intval($data->room_id);
             $owner_id = intval($data->owner_id);
-
-            $new_room = createRoom($db, $room_id, $owner_id);
+            $new_room = createRoom($db, $owner_id);
 
             if (!$new_room) {
                 http_response_code(500);
@@ -76,6 +74,7 @@ try {
                 'room' => $new_room
             ]);
             break;
+
 
 
         case 'DELETE':

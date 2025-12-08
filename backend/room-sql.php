@@ -4,29 +4,34 @@
  * Create a new room (owner only)
  * Also inserts the creator into roomjoin with rank 0.
  */
-function createRoom($db, int $roomId, int $ownerId)
+function createRoom($db, int $ownerId)
 {
     try {
+        // Get max room_id for this user
+        $stmt = $db->prepare("SELECT MAX(room_id) as max_room FROM room WHERE owner_id = :owner");
+        $stmt->execute([':owner' => $ownerId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $nextRoomId = ($row && $row['max_room'] !== null) ? intval($row['max_room']) + 1 : 1;
+
         // Insert into room table
-        $sql = "INSERT INTO room (room_id, owner_id)
-                VALUES (:room, :owner)";
+        $sql = "INSERT INTO room (room_id, owner_id) VALUES (:room, :owner)";
         $stmt = $db->prepare($sql);
         $stmt->execute([
-            ':room' => $roomId,
+            ':room' => $nextRoomId,
             ':owner' => $ownerId
         ]);
 
-        // Insert owner into roomjoin (rank = 0)
+        // Insert owner into roomjoin
         $sql2 = "INSERT INTO roomjoin (room_id, user_id, user_rank)
                  VALUES (:room, :owner, 0)";
         $stmt2 = $db->prepare($sql2);
         $stmt2->execute([
-            ':room' => $roomId,
+            ':room' => $nextRoomId,
             ':owner' => $ownerId
         ]);
 
         return [
-            'room_id' => $roomId,
+            'room_id' => $nextRoomId,
             'owner_id' => $ownerId
         ];
 
@@ -35,6 +40,7 @@ function createRoom($db, int $roomId, int $ownerId)
         return false;
     }
 }
+
 
 
 /**

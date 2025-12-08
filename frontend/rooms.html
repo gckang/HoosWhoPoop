@@ -246,13 +246,13 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
         e.preventDefault();
 
         try {
-            const nextRoomId =
-                rooms.length > 0
-                    ? Math.max(...rooms.map(r => parseInt(r.room_id))) + 1
-                    : 1;
+            // const nextRoomId =
+            //     rooms.length > 0
+            //         ? Math.max(...rooms.map(r => parseInt(r.room_id))) + 1
+            //         : 1;
 
             const payload = {
-                room_id: nextRoomId,
+                //room_id: nextRoomId,
                 owner_id: user.user_id
             };
 
@@ -281,7 +281,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
             <h2>Rooms</h2>
 
             <form onSubmit={handleSubmit} className="poo-form">
-                <button type="submit" className="add-button">Create Room</button>
+                <button type="submit" className="add-button">Add New Room</button>
             </form>
 
             {loading ? (

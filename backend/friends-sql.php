@@ -64,15 +64,23 @@ function deleteFriend($db, int $userId, int $friendId): bool
 function getAllUserFriends($db, int $userId): array
 {
     $query = "SELECT 
-                f.user_id_2 AS friend_id,
+                CASE 
+                    WHEN f.user_id_1 = ? THEN f.user_id_2 
+                    ELSE f.user_id_1 
+                END AS friend_id,
                 u.username
               FROM friend f
-              JOIN useraccount u ON u.user_id = f.user_id_2
-              WHERE f.user_id_1 = :userId";
+              JOIN useraccount u ON u.user_id = CASE 
+                                                    WHEN f.user_id_1 = ? THEN f.user_id_2 
+                                                    ELSE f.user_id_1 
+                                                END
+              WHERE f.user_id_1 = ? OR f.user_id_2 = ?";
+
     $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute([$userId, $userId, $userId, $userId]);
     $friends = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     return $friends;
 }
+
 ?>

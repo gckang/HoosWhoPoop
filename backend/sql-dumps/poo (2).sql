@@ -441,7 +441,7 @@ INSERT INTO `useraccount` (`user_id`, `username`, `password`) VALUES
 -- Indexes for table `friend`
 --
 ALTER TABLE `friend`
-  ADD PRIMARY KEY `user_id_1` (`user_id_1`,`user_id_2`);
+  ADD PRIMARY KEY (`user_id_1`,`user_id_2`);
 
 --
 -- Indexes for table `room`

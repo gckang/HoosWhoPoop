@@ -32,12 +32,14 @@ try {
 
         case 'GET':
             // GET ?room_id=123 → list members
-            if (isset($_GET['room_id'])) {
+            if (isset($_GET['room_id']) && isset($_GET['owner_id'])) {
                 $room_id = intval($_GET['room_id']);
-                $members = getRoomMembers($db, $room_id);
+                $owner_id = intval($_GET['owner_id']);
+                $members = getRoomMembers($db, $room_id, $owner_id);
                 echo json_encode($members);
                 break;
             }
+
 
             // otherwise → list user's rooms
             $rooms = getAllUserRooms($db, $current_user_id);

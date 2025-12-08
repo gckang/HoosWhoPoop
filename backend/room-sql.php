@@ -101,7 +101,7 @@ function deleteRoom(PDO $db, int $userId, int $roomId): bool
 /**
  * Get all members of a room with rank + owner flag.
  */
-function getRoomMembers(PDO $db, int $roomId): array
+function getRoomMembers(PDO $db, int $roomId, int $ownerId): array
 {
     $sql = "SELECT 
                 rj.user_id,
@@ -110,14 +110,19 @@ function getRoomMembers(PDO $db, int $roomId): array
                 (r.owner_id = rj.user_id) AS is_owner
             FROM roomjoin rj
             JOIN useraccount u ON u.user_id = rj.user_id
-            JOIN room r ON r.room_id = rj.room_id
+            JOIN room r ON r.room_id = rj.room_id AND r.owner_id = r.owner_id
             WHERE rj.room_id = :rid
+              AND r.owner_id = :oid
             ORDER BY rj.user_rank ASC";
 
     $stmt = $db->prepare($sql);
-    $stmt->execute([':rid' => $roomId]);
+    $stmt->execute([
+        ':rid' => $roomId,
+        ':oid' => $ownerId
+    ]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
 
 function inviteUsersToRoom(PDO $db, int $ownerId, int $roomId, array $userIds): bool
 {

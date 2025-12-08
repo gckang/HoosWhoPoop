@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
     <!--extracted navbar-->
-    <script src="navBar.js"></script>
+    <script src="navbar.js"></script>
 </head>
 
 <body>
@@ -24,7 +24,7 @@ const { useState, useEffect, useCallback } = React;
 
 // CHANGE IF ON LOCAL HOST
 //const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
-const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
+const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend';
 const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
 const ROOM_API_URL = `${API_BASE_URL}/room-api.php`;
 const ROOM_INVITE_URL = `${API_BASE_URL}/room-invite-api.php`;
@@ -204,7 +204,7 @@ function RoomItem({ room, onDelete, onSelect, isOwner }) {
     return (
         <li 
             className="poo-item"
-            onClick={() => onSelect(room.room_id)}
+            onClick={() => onSelect({ room_id: room.room_id, owner_id: room.owner_id })}
             style={{ cursor: "pointer" }}
         >
             <span>Room #{room.room_id}</span>
@@ -215,7 +215,7 @@ function RoomItem({ room, onDelete, onSelect, isOwner }) {
                         className="fa-solid fa-trash delete-icon"
                         onClick={(e) => { 
                             e.stopPropagation(); 
-                            onDelete(room.room_id); 
+                            onDelete(room); 
                         }}
                     ></i>
                 )}
@@ -227,26 +227,37 @@ function RoomItem({ room, onDelete, onSelect, isOwner }) {
 function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, user, friends }) {
     const [selectedFriends, setSelectedFriends] = useState([]);
 
-    const handleDelete = async (roomID) => {
+    const handleDelete = async (roomObj) => {
+        const { room_id, owner_id } = roomObj;
         try {
             const res = await fetch(ROOM_API_URL, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ room_id: roomID })
+                body: JSON.stringify({ room_id, owner_id })
             });
 
             const result = await res.json();
             if (result.status !== 'success') throw new Error(result.message);
 
-            setRooms(prev => prev.filter(r => r.room_id !== roomID));
+            setRooms(prev =>
+                prev.filter(r =>
+                    !(r.room_id === room_id && r.owner_id === owner_id)
+                )
+            );
 
-            if (selectedRoom === roomID) {
+            if (
+                selectedRoom &&
+                selectedRoom.room_id === room_id &&
+                selectedRoom.owner_id === owner_id
+            ) {
                 setSelectedRoom(null);
             }
+
         } catch (e) {
             console.error(e);
         }
     };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -286,9 +297,11 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
                 body: JSON.stringify({
-                    room_id: selectedRoom,
+                    room_id: selectedRoom.room_id,
+                    owner_id: selectedRoom.owner_id,
                     user_ids: selectedFriends
                 })
+
             });
 
             const result = await response.json();
@@ -324,7 +337,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                     <ul className="list">
                         {rooms.map(room => (
                             <RoomItem 
-                                key={room.room_id}
+                                key={`${room.room_id}-${room.owner_id}`}
                                 room={room}
                                 onDelete={handleDelete}
                                 onSelect={setSelectedRoom}
@@ -382,7 +395,7 @@ function Leaderboard({ selectedRoom }) {
         const fetchLeaderboard = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom}`);
+                const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom.room_id}&owner_id=${selectedRoom.owner_id}`)
                 const data = await res.json();
                 setLeaderboard(data);
             } catch (e) {

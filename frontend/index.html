@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
     <!--extracted navbar-->
-    <script src="navBar.js"></script>
+    <script src="navbar.js"></script>
 </head>
 <body>
     <div id="root"></div>
@@ -24,7 +24,7 @@
         // --- API URLs --- 
         // CHANGE B/W LOCAL AND UVA SERVER
         //const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
-        const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
+        const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend';
 
         const HABIT_API_URL = `${API_BASE_URL}/habit-api.php`;
         const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
@@ -763,16 +763,16 @@
             let caption = "";
 
             if (percent < 25) {
-                pooImage = "../media/miserable_poo.png";
+                pooImage = "../media/miserable_poo.PNG";
                 caption = "direrhea";
             } else if (percent < 50) {
-                pooImage = "../media/sad_poo.png";
+                pooImage = "../media/sad_poo.PNG";
                 caption = "bad bowels";
             } else if (percent < 75) {
-                pooImage = "../media/neutral_poo.png";
+                pooImage = "../media/neutral_poo.PNG";
                 caption = "ok bowels";
             } else {
-                pooImage = "../media/happy_poo.png";
+                pooImage = "../media/happy_poo.PNG";
                 caption = "healthy bowels!!";
             }
 

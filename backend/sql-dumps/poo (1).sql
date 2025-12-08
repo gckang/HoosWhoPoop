@@ -456,65 +456,64 @@ ALTER TABLE `useraccount`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 COMMIT;
 
--- =========================================
+-- 
 -- ROLES
--- =========================================
+-- 
 CREATE ROLE IF NOT EXISTS dev_role;
 CREATE ROLE IF NOT EXISTS app_role;
 
--- =========================================
+-- 
 -- DEVELOPER DATABASE USERS
--- =========================================
+-- 
 CREATE USER IF NOT EXISTS 'dev_1' IDENTIFIED BY 'DevPassword1!';
 CREATE USER IF NOT EXISTS 'dev_2' IDENTIFIED BY 'DevPassword2!';
 
 GRANT dev_role TO 'dev_1';
 GRANT dev_role TO 'dev_2';
 
--- Developers should have full control of your database schema
+-- Developers should have full control database 
 GRANT 
   SELECT, INSERT, UPDATE, DELETE,
   CREATE, ALTER, INDEX, DROP
 ON `poo`.*
 TO dev_role;
 
--- =========================================
+-- 
 -- APPLICATION DATABASE USER
--- =========================================
+-- 
 CREATE USER IF NOT EXISTS 'habit_app' IDENTIFIED BY 'StrongAppPassword!';
 GRANT app_role TO 'habit_app';
 
--- =========================================
--- LEAST PRIVILEGE ACCESS FOR THE APPLICATION
--- (matched to tables in your dump)
--- =========================================
+--
+-- RESTRICTED PRIVILEGE ACCESS
+-- 
 
--- Users table (app must register/login/update profile)
+-- Users table 
 GRANT SELECT, INSERT, UPDATE 
 ON `poo`.`useraccount` 
 TO app_role;
 
--- Rooms (app can show and create rooms)
+-- Rooms 
 GRANT SELECT, INSERT 
 ON `poo`.`room` 
 TO app_role;
 
--- room joins (joining/leaving rooms)
+-- room joins 
 GRANT SELECT, INSERT, DELETE 
 ON `poo`.`roomjoin` 
 TO app_role;
 
--- habits (users create, update, delete their habits)
+-- habits 
 GRANT SELECT, INSERT, UPDATE, DELETE 
 ON `poo`.`habit` 
 TO app_role;
 
--- goals (users create, update, delete goals)
+-- goals 
 GRANT SELECT, INSERT, UPDATE, DELETE 
 ON `poo`.`goal` 
 TO app_role;
 
--- events / progress logs (app can read and insert)
+-- events 
 GRANT SELECT, INSERT 
 ON `poo`.`event` 
 TO app_role;

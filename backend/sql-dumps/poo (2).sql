@@ -467,6 +467,68 @@ ALTER TABLE `useraccount`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 COMMIT;
 
+-- 
+-- ROLES
+-- 
+CREATE ROLE IF NOT EXISTS dev_role;
+CREATE ROLE IF NOT EXISTS app_role;
+
+-- 
+-- DEVELOPER DATABASE USERS
+-- 
+CREATE USER IF NOT EXISTS 'dev_1' IDENTIFIED BY 'DevPassword1!';
+CREATE USER IF NOT EXISTS 'dev_2' IDENTIFIED BY 'DevPassword2!';
+
+GRANT dev_role TO 'dev_1';
+GRANT dev_role TO 'dev_2';
+
+-- Developers should have full control database 
+GRANT 
+  SELECT, INSERT, UPDATE, DELETE,
+  CREATE, ALTER, INDEX, DROP
+ON `poo`.*
+TO dev_role;
+
+-- 
+-- APPLICATION DATABASE USER
+-- 
+CREATE USER IF NOT EXISTS 'habit_app' IDENTIFIED BY 'StrongAppPassword!';
+GRANT app_role TO 'habit_app';
+
+--
+-- RESTRICTED PRIVILEGE ACCESS
+-- 
+
+-- Users table 
+GRANT SELECT, INSERT, UPDATE 
+ON `poo`.`useraccount` 
+TO app_role;
+
+-- Rooms 
+GRANT SELECT, INSERT 
+ON `poo`.`room` 
+TO app_role;
+
+-- room joins 
+GRANT SELECT, INSERT, DELETE 
+ON `poo`.`roomjoin` 
+TO app_role;
+
+-- habits 
+GRANT SELECT, INSERT, UPDATE, DELETE 
+ON `poo`.`habit` 
+TO app_role;
+
+-- goals 
+GRANT SELECT, INSERT, UPDATE, DELETE 
+ON `poo`.`goal` 
+TO app_role;
+
+-- events 
+GRANT SELECT, INSERT 
+ON `poo`.`event` 
+TO app_role;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

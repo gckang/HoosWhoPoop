@@ -30,17 +30,8 @@ try {
 
     switch ($method) {
 
-        // ----------------------------------------------------
-        // GET: All rooms user is in
-        // ----------------------------------------------------
-        // case 'GET':
-        //     $rooms = getAllUserRooms($db, $current_user_id);
-        //     echo json_encode($rooms);
-        //     break;
-
-
         case 'GET':
-            // if room_id is supplied → return leaderboard for that room
+            // GET ?room_id=123 → list members
             if (isset($_GET['room_id'])) {
                 $room_id = intval($_GET['room_id']);
                 $members = getRoomMembers($db, $room_id);
@@ -48,47 +39,45 @@ try {
                 break;
             }
 
-            // otherwise return the user’s rooms
+            // otherwise → list user's rooms
             $rooms = getAllUserRooms($db, $current_user_id);
             echo json_encode($rooms);
             break;
 
-        // ----------------------------------------------------
-        // POST: Create room (no room_name)
-        // ----------------------------------------------------
+
         case 'POST':
-            try {
-                $room = createRoom($db, $current_user_id);
+            $data = json_decode(file_get_contents('php://input'));
 
-                if (!$room) {
-                    http_response_code(500);
-                    echo json_encode([
-                        "status" => "error",
-                        "message" => "Room creation failed."
-                    ]);
-                    exit();
-                }
-
-                http_response_code(201);
+            if (!isset($data->room_id) || !isset($data->owner_id)) {
+                http_response_code(400);
                 echo json_encode([
-                    "status" => "success",
-                    "message" => "Room created successfully.",
-                    "room" => $room
+                    'status' => 'error',
+                    'message' => 'room_id and owner_id required.'
                 ]);
+                break;
+            }
 
-            } catch (PDOException $e) {
+            $room_id = intval($data->room_id);
+            $owner_id = intval($data->owner_id);
+
+            $new_room = createRoom($db, $room_id, $owner_id);
+
+            if (!$new_room) {
                 http_response_code(500);
                 echo json_encode([
-                    "status" => "error",
-                    "message" => "Database error while creating room.",
-                    "details" => $e->getMessage()
+                    'status' => 'error',
+                    'message' => 'Room insert failed.'
                 ]);
+                break;
             }
+
+            echo json_encode([
+                'status' => 'success',
+                'room' => $new_room
+            ]);
             break;
 
-        // ----------------------------------------------------
-        // DELETE: Delete a room (owner only)
-        // ----------------------------------------------------
+
         case 'DELETE':
             $data = json_decode(file_get_contents("php://input"));
 
@@ -109,6 +98,7 @@ try {
                 "message" => $deleted ? "Room deleted." : "Room not found or no permission."
             ]);
             break;
+
 
         default:
             http_response_code(405);

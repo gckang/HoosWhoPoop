@@ -110,6 +110,7 @@ function App() {
                             selectedRoom={selectedRoom}
                             setSelectedRoom={setSelectedRoom}
                             onSelectRoom={setSelectedRoom}
+                            user={user}
                         />
                     </div>
 
@@ -218,7 +219,7 @@ function RoomItem({ room, onDelete, onSelect }) {
     );
 }
 
-function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom }) {
+function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, user }) {
 
     const handleDelete = async (roomID) => {
         try {
@@ -243,22 +244,37 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         try {
+            const nextRoomId =
+                rooms.length > 0
+                    ? Math.max(...rooms.map(r => parseInt(r.room_id))) + 1
+                    : 1;
+
+            const payload = {
+                room_id: nextRoomId,
+                owner_id: user.user_id
+            };
+
             const response = await fetch(ROOM_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload)
             });
 
             const result = await response.json();
-            if (!response.ok || result.status === 'error')
+            if (!response.ok || result.status === "error") {
                 throw new Error(result.message);
+            }
 
             setRooms(prev => [result.room, ...prev]);
-        } catch (e) {
-            console.error(e);
+
+        } catch (error) {
+            console.error("Create room error:", error);
         }
     };
+
 
     return (
         <section>

@@ -2,40 +2,37 @@
 
 /**
  * Create a new room (owner only)
- * Also inserts the creator into roomjoin with rank 10.
+ * Also inserts the creator into roomjoin with rank 0.
  */
-function createRoom(PDO $db, int $ownerId)
+function createRoom($db, int $roomId, int $ownerId)
 {
     try {
-        $db->beginTransaction();
-
-        // Insert into room
-        $sql = "INSERT INTO room (owner_id) VALUES (:ownerId)";
+        // Insert into room table
+        $sql = "INSERT INTO room (room_id, owner_id)
+                VALUES (:room, :owner)";
         $stmt = $db->prepare($sql);
-        $stmt->bindValue(':ownerId', $ownerId, PDO::PARAM_INT);
-        $stmt->execute();
-
-        $room_id = $db->lastInsertId();
-
-        // Insert creator into roomjoin
-        $sql2 = "INSERT INTO roomjoin (room_id, user_id, user_rank)
-                 VALUES (:room_id, :user_id, 10)";
-        $stmt2 = $db->prepare($sql2);
-        $stmt2->execute([
-            ':room_id' => $room_id,
-            ':user_id' => $ownerId
+        $stmt->execute([
+            ':room' => $roomId,
+            ':owner' => $ownerId
         ]);
 
-        $db->commit();
+        // Insert owner into roomjoin (rank = 0)
+        $sql2 = "INSERT INTO roomjoin (room_id, user_id, user_rank)
+                 VALUES (:room, :owner, 0)";
+        $stmt2 = $db->prepare($sql2);
+        $stmt2->execute([
+            ':room' => $roomId,
+            ':owner' => $ownerId
+        ]);
 
         return [
-            "room_id" => $room_id,
-            "owner_id" => $ownerId
+            'room_id' => $roomId,
+            'owner_id' => $ownerId
         ];
 
     } catch (PDOException $e) {
-        $db->rollBack();
-        throw $e;
+        error_log("createRoom error: " . $e->getMessage());
+        return false;
     }
 }
 
@@ -65,7 +62,7 @@ function getAllUserRooms(PDO $db, int $userId): array
  */
 function deleteRoom(PDO $db, int $userId, int $roomId): bool
 {
-    // Check if user is owner
+    // Verify user is owner
     $stmt = $db->prepare("SELECT owner_id FROM room WHERE room_id = :rid");
     $stmt->execute([':rid' => $roomId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -74,20 +71,30 @@ function deleteRoom(PDO $db, int $userId, int $roomId): bool
         return false;
     }
 
-    // Delete room + joins
-    $db->beginTransaction();
+    // Delete room & members
+    try {
+        $db->beginTransaction();
 
-    $db->prepare("DELETE FROM roomjoin WHERE room_id = :rid")
-       ->execute([':rid' => $roomId]);
+        $db->prepare("DELETE FROM roomjoin WHERE room_id = :rid")
+           ->execute([':rid' => $roomId]);
 
-    $db->prepare("DELETE FROM room WHERE room_id = :rid")
-       ->execute([':rid' => $roomId]);
+        $db->prepare("DELETE FROM room WHERE room_id = :rid")
+           ->execute([':rid' => $roomId]);
 
-    $db->commit();
+        $db->commit();
+        return true;
 
-    return true;
+    } catch (PDOException $e) {
+        $db->rollBack();
+        error_log("deleteRoom error: " . $e->getMessage());
+        return false;
+    }
 }
 
+
+/**
+ * Get all members of a room with rank + owner flag.
+ */
 function getRoomMembers(PDO $db, int $roomId): array
 {
     $sql = "SELECT 
@@ -105,6 +112,5 @@ function getRoomMembers(PDO $db, int $roomId): array
     $stmt->execute([':rid' => $roomId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 
 ?>

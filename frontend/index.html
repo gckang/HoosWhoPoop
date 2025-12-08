@@ -30,7 +30,7 @@
         const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
         const EVENT_API_URL = `${API_BASE_URL}/event-api.php`;
         const EVENT_FILTER_URL = `${API_BASE_URL}/event-filter.php`;
-        const FRIEND_API_URL = `${API_BASE_URL}/friends-api.php`;
+        //const FRIEND_API_URL = `${API_BASE_URL}/friends-api.php`;
         const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
         const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
 
@@ -51,8 +51,8 @@
             const [habits, setHabits] = useState([]);
             const [goals, setGoals] = useState([]);
             const [events, setEvents] = useState([]);
-            const [friends, setFriends] = useState([]);
-            const [loading, setLoading] = useState({ habits: true, goals: true, friends: true, events: true});
+            // const [friends, setFriends] = useState([]);
+            const [loading, setLoading] = useState({ habits: true, goals: true, events: true});
             const [error, setError] = useState(null);
 
             useEffect(() => {
@@ -88,7 +88,7 @@
                 if (user) {
                     fetchData(HABIT_API_URL, 'habits', setHabits);
                     fetchData(GOAL_API_URL, 'goals', setGoals);
-                    fetchData(FRIEND_API_URL, 'friends', setFriends);
+                    // fetchData(FRIEND_API_URL, 'friends', setFriends);
                     fetchData(EVENT_API_URL, 'events', setEvents);
                 }
             }, [user, fetchData]);
@@ -142,43 +142,23 @@
                         <div className="main-columns">
                             <div className="three-columns">
                                 <HabitManager habits={habits} loading={loading.habits} setHabits={setHabits}/>
-                                <EventAdder goals={goals} onEventAdded={handleEventAdded} setError={setError} />
+                                <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals} progress={goalProgress}/>
                             </div>
 
                             <div className="three-columns">
-                                <GoalManager goals={goals} habits={habits} loading={loading.goals} setGoals={setGoals} progress={goalProgress}/>
+                                <EventAdder goals={goals} onEventAdded={handleEventAdded} setError={setError} />
                                 <EventDisplay goals={goals} events={events} setEvents={setEvents} loading={loading.events}/>
                             </div>
 
-                            {/* Right column: Goal on top, Friends directly below (matching font/size) */}
                             <div className="three-columns">
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     <PooSprite percent={averagePercent} />
-                                    {/* Use same section styles as other lists and inherit font/size */}
-                                    <div style={{ width: '100%' }}>
-                                        <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             );
-        }
-
-        function NavBar({user, handleLogout}) {
-            return (
-                <header className="app-header">
-                    <h1>HoosWhoPoop</h1>
-                    <p>Hello pooper, <span className="username">{user.username}</span></p>
-                    <ul className="navigation">
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="events.html">Entries</a></li>
-                        <li><a href="rooms.html">Rooms</a></li>
-                    </ul>
-                    <button className="logout-button" onClick={handleLogout}>Logout</button>
-                </header>
-            )
         }
 
         function HabitItem({ habit, onDelete, onEdit }) {
@@ -567,88 +547,6 @@
                             ))}
                         </ul>
                     )}
-                </section>
-            );
-        }
-
-        // Friend item - same style as habit item but no edit button
-        function FriendItem({ friend, onDelete }) {
-            return (
-                <li className="poo-item">
-                    <span className="habit-text">{friend.username || friend.name || friend.display_name}</span>
-                    <span className="list-actions">
-                        <i
-                            className="fa-solid fa-trash delete-icon"
-                            onClick={() => onDelete(friend.friend_id)}
-                        ></i>
-                    </span>
-                </li>
-            );
-        }
-
-        // Friend manager - styled like habit-section, placed under right goal column
-        function FriendManager({ friends, loading, setFriends }) {
-            const [newFriend, setNewFriend] = useState('');
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if (!newFriend.trim()) return;
-                try {
-                    const response = await fetch(FRIEND_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ friend_id: newFriend })
-                    });
-                    const result = await response.json();
-                    if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add friend');
-
-                    setNewFriend('');
-                    setFriends(prev => [result.friend, ...prev]);
-                } catch (e) {
-                    console.error(e);
-                }
-            };
-
-            const handleDelete = async (friendId) => {
-                try {
-                    const res = await fetch(FRIEND_API_URL, {
-                        method: "DELETE",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ friend_id: friendId })
-                    });
-                    const result = await res.json();
-                    if (result.status !== 'success') throw new Error(result.message);
-
-                    setFriends(prev => prev.filter(f => f.friend_id !== friendId));
-                } catch (e) {
-                    console.error(e);
-                }
-            };
-
-            return (
-                <section className="habit-section"> {/* reuse habit-section styles for identical look */}
-                    <h2>Friends</h2>
-                    <form onSubmit={handleSubmit} className="poo-form">
-                        <input
-                            value={newFriend}
-                            onChange={e => setNewFriend(e.target.value)}
-                            placeholder="Add friend (user ID)"
-                            className="poo-input"
-                        />
-                        <button type="submit" className="add-button">Add</button>
-                    </form>
-
-                    {loading ? <div className="spinner"></div> :
-                        <ul className="list">
-                            {friends.map(f => (
-                                <FriendItem
-                                    key={f.friend_id}
-                                    friend={f}
-                                    onDelete={handleDelete}
-                                />
-                            ))}
-                        </ul>
-                    }
                 </section>
             );
         }

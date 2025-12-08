@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoos Who Poop</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!--extracted navbar-->
+    <script src="navBar.js"></script>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// CHANGE IF ON LOCAL HOST
+const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
+// const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
+const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
+const ROOM_API_URL = `${API_BASE_URL}/room-api.php`;
+const FRIEND_API_URL = `${API_BASE_URL}/friends-api.php`;
+const CHECK_SESSION_API_URL = `${API_BASE_URL}/auth/check-session-api.php`;
+const LOGOUT_API_URL = `${API_BASE_URL}/auth/logout-api.php`;
+
+const LoadingSpinner = () => (
+    <div className="flex justify-center items-center h-24"><div className="spinner"></div></div>
+);
+
+function App() {
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [friends, setFriends] = useState([]);
+    const [loading, setLoading] = useState({ habits: true, goals: true, friends: true, events: true});
+    const [error, setError] = useState(null);
+    const [user, setUser] = useState(null);
+    const [goals, setGoals] = useState([]);
+    const [rooms, setRooms] = useState([]);
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const response = await fetch(CHECK_SESSION_API_URL, { credentials:'include' });
+                if(!response.ok) throw new Error('Not logged in');
+                const data = await response.json();
+                if(data.status==='success') setUser(data.user);
+                else throw new Error('Not logged in');
+            } catch(e){ window.location.href='login.html'; }
+            finally { setIsCheckingAuth(false); }
+        };
+        checkAuth();
+    }, []);
+
+    const fetchData = useCallback(async (url, key, setter)=>{
+        setLoading(prev => ({...prev,[key]:true}));
+        try{
+            const response = await fetch(url);
+            if(!response.ok) throw new Error(`HTTP error! ${response.status}`);
+            const data = await response.json();
+            setter(data);
+            console.log("Fetched", key, data); 
+        }catch(e){
+            setError(`Could not fetch ${key}: ${e.message}`);
+        }finally{
+            setLoading(prev => ({...prev,[key]:false}));
+        }
+    }, []);
+
+    useEffect(()=>{
+        if(user){
+            fetchData(GOAL_API_URL,'goals',setGoals);
+            fetchData(ROOM_API_URL,'rooms',setRooms);
+            fetchData(FRIEND_API_URL, 'friends', setFriends);
+        }
+    },[user,fetchData]);
+
+    const handleEventAdded = ()=>fetchData(EVENT_API_URL,'events',setEvents);
+
+    const handleLogout = async ()=>{
+        try{ await fetch(LOGOUT_API_URL,{method:'POST',credentials:'include'}); }
+        finally{ window.location.href='login.html'; }
+    };
+
+    if(isCheckingAuth) return <div className="flex items-center justify-center min-h-screen"><LoadingSpinner/></div>;
+
+    return(
+        <div>
+            {NavBar({user, handleLogout})}
+
+            <div className="content-container">
+                <div className="main-columns">
+                    <div className="three-columns">
+                        <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
+                    </div>
+                    <div className="three-columns">
+                        <RoomManager rooms={rooms} loading={loading.rooms} setRooms={setRooms}/>
+                    </div>
+                    <div className="three-columns">
+                        <FriendManager friends={friends} loading={loading.friends} setFriends={setFriends} />
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    );
+}
+
+function FriendItem({ friend, onDelete }) {
+    return (
+        <li className="poo-item">
+            <span className="habit-text">{friend.username || friend.name || friend.display_name}</span>                    
+            <span className="list-actions">
+                <i className="fa-solid fa-trash delete-icon" onClick={() => onDelete(friend.friend_id)}></i>
+            </span>
+        </li>            
+        
+    );
+}
+
+function FriendManager({ friends, loading, setFriends }) {
+    const [newFriend, setNewFriend] = useState('');
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!newFriend.trim()) return;
+        try {
+            const response = await fetch(FRIEND_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ friend_id: newFriend })
+            });
+            const result = await response.json();
+            if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add friend');
+
+            setNewFriend('');
+            setFriends(prev => [result.friend, ...prev]);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleDelete = async (friendId) => {
+        try {
+            const res = await fetch(FRIEND_API_URL, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ friend_id: friendId })
+            });
+            const result = await res.json();
+            if (result.status !== 'success') throw new Error(result.message);
+            setFriends(prev => prev.filter(f => f.friend_id !== friendId));
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    return (
+        <section> 
+            <h2>Friends</h2>
+            <form onSubmit={handleSubmit} className="poo-form">
+                <input
+                    value={newFriend}
+                    onChange={e => setNewFriend(e.target.value)}
+                    placeholder="Add friend using their user ID..."
+                    className="poo-input"
+                />
+                <button type="submit" className="add-button">Add</button>
+            </form>
+
+            {loading ? <div className="spinner"></div> :
+                <ul className="list">
+                    {friends.map(f => (
+                        <FriendItem key={f.friend_id} friend={f} onDelete={handleDelete} />
+                    ))}
+                </ul>
+            }
+        </section>
+    );
+}
+
+function RoomItem({ room, onDelete }) {
+    return (
+        <li className="poo-item">
+            <span>{room.room_id || room.owner_id}</span>                    
+            <span className="list-actions">
+                <i className="fa-solid fa-trash delete-icon" onClick={() => onDelete(room.room_id)}></i>
+            </span>
+        </li>            
+    );
+}
+
+
+function RoomManager({ rooms, loading, setRooms }) {
+    const [newRoom, setNewRoom] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!newRoom.trim()) return;
+        try {
+            const response = await fetch(ROOM_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ })
+            });
+            const result = await response.json();
+            if (!response.ok || result.status === 'error') throw new Error(result.message || 'Failed to add room');
+
+            setNewRoom('');
+            setRooms(prev => [result.room, ...prev]);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleDelete = async (roomID) => {
+        try {
+            const res = await fetch(ROOM_API_URL, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ room_id: roomID })
+            });
+            const result = await res.json();
+            if (result.status !== 'success') throw new Error(result.message);
+            setRooms(prev => prev.filter(f => r.room_id !== roomID));
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    return(
+        <section>
+            <h2>Rooms</h2>
+            <form onSubmit={handleSubmit} className="poo-form">
+                <input
+                    value={newRoom}
+                    onChange={e => setNewRoom(e.target.value)}
+                    placeholder="Add friend using their user ID..."
+                    className="poo-input"
+                />
+                <button type="submit" className="add-button">Create Room</button>
+            </form>
+
+            {loading ? <div className="spinner"></div> :
+                <ul className="list">
+                    {rooms.map(r => (
+                        <RoomItem key={r.room_id} room={r} onDelete={handleDelete} />
+                    ))}
+                </ul>
+            }
+        </section>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

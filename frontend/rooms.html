@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
     <!--extracted navbar-->
-    <script src="navBar.js"></script>
+    <script src="navbar.js"></script>
 </head>
 
 <body>
@@ -23,8 +23,8 @@
 const { useState, useEffect, useCallback } = React;
 
 // CHANGE IF ON LOCAL HOST
-const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
-// const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend/';
+//const API_BASE_URL = 'http://localhost/HoosWhoPoop/backend/';
+const API_BASE_URL = 'https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/backend';
 const GOAL_API_URL = `${API_BASE_URL}/goal-api.php`;
 const ROOM_API_URL = `${API_BASE_URL}/room-api.php`;
 const ROOM_INVITE_URL = `${API_BASE_URL}/room-invite-api.php`;
@@ -204,7 +204,7 @@ function RoomItem({ room, onDelete, onSelect, isOwner }) {
     return (
         <li 
             className="poo-item"
-            onClick={() => onSelect(room.room_id)}
+            onClick={() => onSelect({ room_id: room.room_id })}
             style={{ cursor: "pointer" }}
         >
             <span>Room #{room.room_id}</span>
@@ -215,7 +215,7 @@ function RoomItem({ room, onDelete, onSelect, isOwner }) {
                         className="fa-solid fa-trash delete-icon"
                         onClick={(e) => { 
                             e.stopPropagation(); 
-                            onDelete(room.room_id); 
+                            onDelete(room); 
                         }}
                     ></i>
                 )}
@@ -227,22 +227,24 @@ function RoomItem({ room, onDelete, onSelect, isOwner }) {
 function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, user, friends }) {
     const [selectedFriends, setSelectedFriends] = useState([]);
 
-    const handleDelete = async (roomID) => {
+    const handleDelete = async (roomObj) => {
+        const { room_id } = roomObj;
         try {
             const res = await fetch(ROOM_API_URL, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ room_id: roomID })
+                body: JSON.stringify({ room_id })
             });
 
             const result = await res.json();
             if (result.status !== 'success') throw new Error(result.message);
 
-            setRooms(prev => prev.filter(r => r.room_id !== roomID));
+            setRooms(prev => prev.filter(r => r.room_id !== room_id));
 
-            if (selectedRoom === roomID) {
+            if (selectedRoom && selectedRoom.room_id === room_id) {
                 setSelectedRoom(null);
             }
+
         } catch (e) {
             console.error(e);
         }
@@ -253,7 +255,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
 
         try {
             const payload = {
-                owner_id: user.user_id
+                owner_id: user.user_id // still include owner_id for DB insertion
             };
 
             const response = await fetch(ROOM_API_URL, {
@@ -268,6 +270,7 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                 throw new Error(result.message);
             }
 
+            // Add new room to state
             setRooms(prev => [...prev, result.room]);
 
         } catch (error) {
@@ -286,21 +289,18 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
                 body: JSON.stringify({
-                    room_id: selectedRoom,
+                    room_id: selectedRoom.room_id,
                     user_ids: selectedFriends
                 })
             });
 
             const result = await response.json();
-            if (!response.ok || result.status === "error") {
-                throw new Error(result.message);
-            }
-
+            if (!response.ok || result.status === "error") throw new Error(result.message);
 
             setSelectedFriends([]);
             const currentRoom = selectedRoom;
-            setSelectedRoom(null);       // temporarily deselect
-            setTimeout(() => setSelectedRoom(currentRoom), 10); // switch back
+            setSelectedRoom(null);
+            setTimeout(() => setSelectedRoom(currentRoom), 10);
 
         } catch (e) {
             console.error("Invite error:", e);
@@ -373,25 +373,45 @@ function RoomList({ rooms, loading, setRooms, selectedRoom, setSelectedRoom, use
 }
 
 function Leaderboard({ selectedRoom }) {
-    const [leaderboard, setLeaderboard] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [leaderboard, setLeaderboard] = React.useState([]);
+    const [loading, setLoading] = React.useState(false);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (!selectedRoom) return;
 
+        let firstLoad = true;
         const fetchLeaderboard = async () => {
-            setLoading(true);
             try {
-                const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom}`);
+                if (firstLoad) setLoading(true);
+                const res = await fetch(`${ROOM_API_URL}?room_id=${selectedRoom.room_id}`);
                 const data = await res.json();
-                setLeaderboard(data);
+                
+                // Only update if the leaderboard actually changed
+                const isEqual =
+                    data.length === leaderboard.length &&
+                    data.every((member, idx) =>
+                        member.user_id === (leaderboard[idx] && leaderboard[idx].user_id) &&
+                        member.username === (leaderboard[idx] && leaderboard[idx].username) &&
+                        Number(member.is_owner) === Number(leaderboard[idx] && leaderboard[idx].is_owner)
+                    );
+
+                if (!isEqual) setLeaderboard(data);
+
+                if (firstLoad) {
+                    setLoading(false);
+                    firstLoad = false;
+                }
+                
             } catch (e) {
                 console.error("Error fetching leaderboard:", e);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         fetchLeaderboard();
+        const interval = setInterval(fetchLeaderboard, 5000);
+        return () => clearInterval(interval);
     }, [selectedRoom]);
 
     return (
@@ -404,16 +424,15 @@ function Leaderboard({ selectedRoom }) {
 
             {!loading && selectedRoom && (
                 <ul className="list">
-                    {leaderboard
-                        .map((member, index) => (
-                            <li key={member.user_id} className="leaderboard-item">
-                                <span className="rank-number">{index + 1}.</span>
-                                <span className="rank-username">{member.username}</span>
-                                {member.is_owner == 1 && (
-                                    <i className="fa-solid fa-crown owner-icon"></i>
-                                )}
-                            </li>
-                        ))}
+                    {leaderboard.map((member, index) => (
+                        <li key={member.user_id} className="leaderboard-item">
+                            <span className="rank-number">{index + 1}.</span>
+                            <span className="rank-username">{member.username}</span>
+                            {member.is_owner === 1 && (
+                                <i className="fa-solid fa-crown owner-icon" title="Room Owner"></i>
+                            )}
+                        </li>
+                    ))}
                 </ul>
             )}
         </section>

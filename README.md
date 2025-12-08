@@ -1,9 +1,7 @@
 # HoosWhoPoop
 
-Create user "demo" with password "demo". The database name is "poo".
+Welcome pooper!
 
-Make sure to have this folder saved under xampp\htdocs folder.
-
-Access the page from http://localhost/hooswhopoop/login.html
-
-All the passwords stored in the database are encrypted, but the pattern is passUSERNAME!
+We are hosting our database with MySql using XAMPP. We are hosting our app on the cs.virginia.edu domain. In order to deploy and run HoosWhoPoop:
+1. Connect to UVA Wi-Fi or use a VPN and visit the public remote URL https://www.cs.virginia.edu/~kng4jc/HoosWhoPoop/frontend/login.html
+2. Register a new account and create your own username and password.

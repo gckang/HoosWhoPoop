@@ -31,7 +31,6 @@ try {
     switch ($method) {
 
         case 'GET':
-            // GET ?room_id=123 → list members
             if (isset($_GET['room_id'])) {
                 $room_id = intval($_GET['room_id']);
                 $members = getRoomMembers($db, $room_id);
@@ -89,8 +88,10 @@ try {
                 exit();
             }
 
+            // DELETE
             $room_id = intval($data->room_id);
             $deleted = deleteRoom($db, $current_user_id, $room_id);
+
 
             echo json_encode([
                 "status" => $deleted ? "success" : "error",
